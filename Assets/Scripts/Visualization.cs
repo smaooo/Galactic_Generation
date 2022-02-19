@@ -36,7 +36,7 @@ public class Visualization : MonoBehaviour
             foreach (var v in verts)
             {
                 Gizmos.color = Color.red;
-                Gizmos.DrawSphere(v, 0.1f);
+                Gizmos.DrawSphere(v, 0.01f);
 
 
             }
@@ -49,15 +49,24 @@ public class Visualization : MonoBehaviour
         Vector3 size = Vector3.one * unitLength/2;
         for (int i = 0; i < positions.Count; i++)
         {
+            IEnumerable<Vector3> m = null;
             var p = positions[i];
             List<Vector3> tmpVerts = new List<Vector3>();
             Vector3 curPos = p.GetColumn(3);
             Vector3 curScale = new Vector3(p.GetColumn(0).magnitude, p.GetColumn(1).magnitude, p.GetColumn(2).magnitude);
             Vector3 offset = new Vector3(size.x / curScale.x, size.y / curScale.y, size.z / curScale.z);
-            vertices.Add(new Vector3(curPos.x + offset.x, i < positions.Count - 1 ? (curPos.y + positions[i+1].GetColumn(3).y) / 2 : curPos.y, curPos.z + offset.z));
-            vertices.Add(new Vector3(curPos.x - offset.x, curPos.y , curPos.z + offset.z));
-            vertices.Add(new Vector3(curPos.x + offset.x, i < positions.Count - 1 ? (curPos.y + positions[i + 1].GetColumn(3).y) / 2 : curPos.y, curPos.z - offset.z));
-            vertices.Add(new Vector3(curPos.x - offset.x, curPos.y , curPos.z - offset.z));
+            m = vertices.Where(v => v.x == curPos.x + offset.x && v.z == curPos.z + offset.z);
+            m.ToList().Add(new Vector3(0,curPos.y + offset.y,0));
+            vertices.Add(new Vector3(curPos.x + offset.x, m.Count() > 0 ? m.Average(v => v.y) : curPos.y + offset.y, curPos.z + offset.z));
+            m = vertices.Where(v => v.x == curPos.x - offset.x && v.z == curPos.z + offset.z);
+            m.ToList().Add(new Vector3(0,curPos.y + offset.y,0));
+            vertices.Add(new Vector3(curPos.x - offset.x, m.Count() > 0 ? m.Average(v => v.y) : curPos.y + offset.y, curPos.z + offset.z));
+            m = vertices.Where(v => v.x == curPos.x + offset.x && v.z == curPos.z - offset.z);
+            m.ToList().Add(new Vector3(0,curPos.y + offset.y,0));
+            vertices.Add(new Vector3(curPos.x + offset.x, m.Count() > 0 ? m.Average(v => v.y) : curPos.y + offset.y, curPos.z - offset.z));
+            m = vertices.Where(v => v.x == curPos.x - offset.x && v.z == curPos.z + offset.z);
+            m.ToList().Add(new Vector3(0,curPos.y + offset.y,0));
+            vertices.Add(new Vector3(curPos.x - offset.x, m.Count() > 0 ? m.Average(v => v.y) : curPos.y + offset.y, curPos.z - offset.z));
             //Vector3 minXminZ = tmpVerts.OrderBy(v => v.x).OrderBy(v => v.z).First();
             //Vector3 maxXmaxZ = tmpVerts.OrderByDescending(v => v.x).ThenByDescending(v => v.z).First();
             //Vector3 minXmaxZ = tmpVerts.OrderBy(v => v.x).ThenByDescending(v => v.z).First();
@@ -76,17 +85,19 @@ public class Visualization : MonoBehaviour
             //triangles.Add(vertices.Count - 1);
 
         }
+
         foreach(var v in vertices)
         {
+            //print(v);
             float far = Mathf.Sqrt((unitLength * unitLength) * 2);
             Vector3 up = vertices.ToList().Find(x => x.x == v.x && x.z - v.z == 1.0f);
             Vector3 right = vertices.ToList().Find(x => x.z == v.z && x.x - v.x == 1.0f);
             
             Vector3 ortho = vertices.ToList().Find(x => x.x == v.x + 1.0f && x.z == v.z + 1.0f);
             if (up == Vector3.zero || right == Vector3.zero || ortho == Vector3.zero) continue;
-            print("up " + up);
-            print("right " + right);
-            print("ortho " + ortho);
+            //print("up " + up);
+            //print("right " + right);
+            //print("ortho " + ortho);
 
             
             triangles.Add(vertices.ToList().IndexOf(v));

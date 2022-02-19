@@ -12,6 +12,7 @@ public class VisHelp : Editor
         
         foreach (var t in v.verts)
         {
+            
             Handles.Label(t, v.verts.IndexOf(t).ToString() + " " + t.ToString());
         }
     }
