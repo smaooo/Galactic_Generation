@@ -6,6 +6,8 @@ using ProceduralMeshes.Generators;
 using ProceduralMeshes.Streams;
 using UnityEngine.Rendering;
 
+//https://catlikecoding.com/unity/tutorials/procedural-meshes/square-grid/
+
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class ProceduralMesh : MonoBehaviour
 {
