@@ -109,10 +109,10 @@ public class Hash : MonoBehaviour
             matrices[i] = matrix;
           
         }
-        
-        propertyBlock = new MaterialPropertyBlock();
-        hashesBuffer.SetData(hashes);
-        propertyBlock.SetBuffer("_Hashes", hashesBuffer);
+        Visualization.CreateMesh(matrices.ToList(), 1f, material);
+        //propertyBlock = new MaterialPropertyBlock();
+        //hashesBuffer.SetData(hashes);
+        //propertyBlock.SetBuffer("_Hashes", hashesBuffer);
 
         //float[] fHashes = new float[hashes.Length - 1];
         //for (int i = 0; i < length - 1; i++)
@@ -135,7 +135,7 @@ public class Hash : MonoBehaviour
     
     private void Update()
     {
-        Graphics.DrawMeshInstanced(instanceMesh, 0, material, matrices, length - 1, propertyBlock);
+        //Graphics.DrawMeshInstanced(instanceMesh, 0, material, matrices, length - 1, propertyBlock);
 
         //Graphics.DrawMeshInstancedIndirect(instanceMesh, 0, material, new Bounds(Vector3.zero, Vector3.one), )
         //Graphics.DrawMeshInstancedProcedural(instanceMesh, 0, material, new Bounds(Vector3.zero, Vector3.one), length, propertyBlock);
