@@ -11,19 +11,28 @@ public class ProceduralMesh : MonoBehaviour
 {
     [SerializeField, Range(1, 10)]
     private int resolution = 1;
-
+    Mesh mesh;
     private void Awake()
     {
-        Mesh mesh = new Mesh
+        mesh = new Mesh
         {
             name = "Mesh"
         };
 
-        GenerateMesh(ref mesh);
+        //GenerateMesh();
         GetComponent<MeshFilter>().mesh = mesh;
     }
+    private void OnValidate()
+    {
+        enabled = true;
+    }
+    private void Update()
+    {
+        enabled = false;
+        GenerateMesh();
+    }
 
-    private void GenerateMesh(ref Mesh mesh)
+    private void GenerateMesh()
     {
         Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
         Mesh.MeshData meshData = meshDataArray[0];
