@@ -90,6 +90,17 @@ public class ProceduralMesh : MonoBehaviour
     {
         enabled = false;
         GenerateMesh();
+        if ((int)meshType > 4)
+        {
+            GetComponent<MeshRenderer>().material.EnableKeyword("_TEXTUREMODE_TILEMAP");
+            GetComponent<MeshRenderer>().material.DisableKeyword("_TEXTUREMODE_UVMAP");
+        }
+        else
+        {
+            GetComponent<MeshRenderer>().material.EnableKeyword("_TEXTUREMODE_UVMAP");
+            GetComponent<MeshRenderer>().material.DisableKeyword("_TEXTUREMODE_TILEMAP");
+
+        }
         vertices = new List<Vector3>();
         normals = new List<Vector3>();
         tangents = new List<Vector4>();

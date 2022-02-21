@@ -1807,11 +1807,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a63e624c9b4a8964686d3f7ea4ab16a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshType: 5
-  resolution: 1
+  meshType: 0
+  resolution: 12
   slider: {fileID: 1360204742}
   dropDown: {fileID: 126374154}
-  gizmoMode: 6
+  gizmoMode: 0
 --- !u!23 &1564177257
 MeshRenderer:
   m_ObjectHideFlags: 0

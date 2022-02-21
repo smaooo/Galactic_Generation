@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Mat
   m_Shader: {fileID: -6465566751694194690, guid: 55e8f3184bb1a3441ba0db194356e0c7, type: 3}
-  m_ShaderKeywords: _NORMALMAP _SPECULAR_SETUP
+  m_ShaderKeywords: ENUM_2F4A465691AD4AD2B986823037CD3A09_TILEMAP _NORMALMAP _SPECULAR_SETUP
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 1
@@ -19,6 +19,14 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - Cubemap_2cb7c1476c7946b19ca54b3d7ed6c758:
+        m_Texture: {fileID: 8900000, guid: 0a62f6fafd9322147bd0713cbbcdb9e9, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - Cubemap_ec3e4cd20cbd41a2b02e213b99cc5246:
+        m_Texture: {fileID: 8900000, guid: 0865609a449e35d4bb81d8d4a2be017e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - Texture2D_0b20f317f33b4acd962ead8e4adbea8a:
         m_Texture: {fileID: 2800000, guid: bacad13f9b42d734ab4e86457d57a35d, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -85,6 +93,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - BOOLEAN_CB3CB320E79342FFACB43393AA732F6D: 0
+    - ENUM_2F4A465691AD4AD2B986823037CD3A09: 1
     - Vector1_5f1b56da60e6443b9bdaf25e0bb2b39a: 0.618
     - Vector1_75d5941f34044296962cff0299090b7d: 50.73
     - _AlphaClip: 0
@@ -107,7 +116,7 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _RippleAmplitude: 0.5
-    - _RipplePeriod: 1
+    - _RipplePeriod: 0.28
     - _RippleSpeed: 0.195
     - _Smoothness: 0
     - _SmoothnessTextureChannel: 0
@@ -120,7 +129,7 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 1, g: 0, b: 0, a: 1}
-    - _RippleOrigin: {r: 0, g: 0, b: 0, a: 0}
+    - _RippleOrigin: {r: 1, g: 0, b: 1, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &6010679413589678471
