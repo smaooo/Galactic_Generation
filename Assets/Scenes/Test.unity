@@ -291,17 +291,7 @@ MonoBehaviour:
   m_ItemImage: {fileID: 0}
   m_Value: -76
   m_Options:
-    m_Options:
-    - m_Text: Square Grid
-      m_Image: {fileID: 0}
-    - m_Text: Shared Square Grid
-      m_Image: {fileID: 0}
-    - m_Text: Shared Triangle Grid
-      m_Image: {fileID: 0}
-    - m_Text: Pointy Hexagon Grid
-      m_Image: {fileID: 0}
-    - m_Text: Flat Hexagon Grid
-      m_Image: {fileID: 0}
+    m_Options: []
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
@@ -884,7 +874,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Square Grid
+  m_Text: 
 --- !u!222 &879486297
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1817,9 +1807,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a63e624c9b4a8964686d3f7ea4ab16a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshType: 4
-  resolution: 3
+  meshType: 5
+  resolution: 1
   slider: {fileID: 1360204742}
+  dropDown: {fileID: 126374154}
   gizmoMode: 6
 --- !u!23 &1564177257
 MeshRenderer:

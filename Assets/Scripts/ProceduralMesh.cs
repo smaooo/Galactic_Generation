@@ -6,6 +6,8 @@ using ProceduralMeshes.Generators;
 using ProceduralMeshes.Streams;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
+using System;
+using System.Linq;
 
 //https://catlikecoding.com/unity/tutorials/procedural-meshes/square-grid/
 
@@ -20,11 +22,13 @@ public class ProceduralMesh : MonoBehaviour
         MeshJob<SharedTriangleGrid, SingleStream>.ScheduleParallel,
         MeshJob<PointyHexagonGrid, SingleStream>.ScheduleParallel,
         MeshJob<FlatHexagonGrid, SingleStream>.ScheduleParallel,
+        MeshJob<UVSphere, SingleStream>.ScheduleParallel
     };
 
     public enum MeshType
     {
-        SquareGrid, SharedSquareGrid, SharedTriangleGrid, PointyHexagonGrid, FlatHexagonGrid
+        SquareGrid, SharedSquareGrid, SharedTriangleGrid, PointyHexagonGrid, FlatHexagonGrid,
+        UVSphere
     }
 
     [SerializeField]
@@ -38,6 +42,8 @@ public class ProceduralMesh : MonoBehaviour
 
     private List<Vector3> vertices, normals;
     private List<Vector4> tangents;
+    [SerializeField]
+    private Dropdown dropDown;
 
     [System.Flags]
     public enum GizmoMode { Nothing = 0, Vertices = 1, Normals = 0b10, Tangents = 0b100}
@@ -46,6 +52,13 @@ public class ProceduralMesh : MonoBehaviour
 
     private void Awake()
     {
+        List<string> options = new List<string>();
+        foreach (var m in Enum.GetValues(typeof(MeshType)))
+        {
+            options.Add(m.ToString());
+        }
+        dropDown.AddOptions(options);
+        dropDown.value = (int)meshType;
         slider.onValueChanged.AddListener(ChangeResolution);
         mesh = new Mesh
         {
