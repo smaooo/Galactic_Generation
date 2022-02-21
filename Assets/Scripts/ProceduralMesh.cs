@@ -5,6 +5,7 @@ using ProceduralMeshes;
 using ProceduralMeshes.Generators;
 using ProceduralMeshes.Streams;
 using UnityEngine.Rendering;
+using UnityEngine.UI;
 
 //https://catlikecoding.com/unity/tutorials/procedural-meshes/square-grid/
 
@@ -32,8 +33,11 @@ public class ProceduralMesh : MonoBehaviour
     [SerializeField, Range(1, 50)]
     private int resolution = 1;
     Mesh mesh;
+    [SerializeField]
+    private Slider slider;
     private void Awake()
     {
+        slider.onValueChanged.AddListener(ChangeResolution);
         mesh = new Mesh
         {
             name = "Mesh"
@@ -41,6 +45,20 @@ public class ProceduralMesh : MonoBehaviour
 
         //GenerateMesh();
         GetComponent<MeshFilter>().mesh = mesh;
+    }
+
+    public void ChangeValues(Dropdown dropDown)
+    {
+        meshType = (MeshType)dropDown.value;
+        enabled = true;
+    }
+
+    public void ChangeResolution(float value)
+    {
+        print(value);
+        enabled = true;
+        resolution = (int)slider.value;
+        enabled = true;
     }
     private void OnValidate()
     {
