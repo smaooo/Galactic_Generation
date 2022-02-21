@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Mat
   m_Shader: {fileID: -6465566751694194690, guid: 55e8f3184bb1a3441ba0db194356e0c7, type: 3}
-  m_ShaderKeywords: BOOLEAN_CB3CB320E79342FFACB43393AA732F6D_ON _NORMALMAP _SPECULAR_SETUP
+  m_ShaderKeywords: _NORMALMAP _SPECULAR_SETUP
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 1
@@ -84,7 +84,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - BOOLEAN_CB3CB320E79342FFACB43393AA732F6D: 1
+    - BOOLEAN_CB3CB320E79342FFACB43393AA732F6D: 0
     - Vector1_5f1b56da60e6443b9bdaf25e0bb2b39a: 0.618
     - Vector1_75d5941f34044296962cff0299090b7d: 50.73
     - _AlphaClip: 0

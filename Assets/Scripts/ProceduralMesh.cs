@@ -35,6 +35,15 @@ public class ProceduralMesh : MonoBehaviour
     Mesh mesh;
     [SerializeField]
     private Slider slider;
+
+    private List<Vector3> vertices, normals;
+    private List<Vector4> tangents;
+
+    [System.Flags]
+    public enum GizmoMode { Nothing = 0, Vertices = 1, Normals = 0b10, Tangents = 0b100}
+    [SerializeField]
+    private GizmoMode gizmoMode;
+
     private void Awake()
     {
         slider.onValueChanged.AddListener(ChangeResolution);
@@ -68,6 +77,53 @@ public class ProceduralMesh : MonoBehaviour
     {
         enabled = false;
         GenerateMesh();
+        vertices = new List<Vector3>();
+        normals = new List<Vector3>();
+        tangents = new List<Vector4>();
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (gizmoMode == GizmoMode.Nothing || mesh == null)
+        {
+            return;
+        }
+
+        bool drawVertices = (gizmoMode & GizmoMode.Vertices) != 0;
+        bool drawNormals = (gizmoMode & GizmoMode.Normals) != 0;
+        bool drawTangents = (gizmoMode & GizmoMode.Tangents) != 0;
+
+        if (vertices.Count == 0)
+        {
+            vertices = new List<Vector3>(mesh.vertices);
+        }
+        if (drawNormals && normals.Count == 0)
+        {
+            normals = new List<Vector3>(mesh.normals);
+        }
+        if (drawTangents && tangents.Count == 0)
+        {
+            tangents = new List<Vector4>(mesh.tangents);
+        }
+        for (int i = 0; i < vertices.Count; i++)
+        {
+            Vector3 p = transform.TransformPoint(vertices[i]);
+            if (drawVertices)
+            {
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawSphere(p, 0.02f);
+            }
+            if (drawNormals)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawRay(p, transform.TransformPoint(normals[i]) * 0.2f);
+            }
+            if (drawTangents)
+            {
+                Gizmos.color = Color.red;
+                Gizmos.DrawRay(p, transform.TransformPoint(tangents[i]) * 0.2f);
+            }
+        }
     }
 
     private void GenerateMesh()
