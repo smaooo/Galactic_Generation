@@ -9,6 +9,7 @@ using Unity.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
 
 using static Unity.Mathematics.math;
+using static Unity.Mathematics.noise;
 
 namespace ProceduralMeshes
 {
@@ -24,12 +25,13 @@ namespace ProceduralMeshes
         public void Execute(int i) => generator.Execute(i, streams);
 
         public static JobHandle ScheduleParallel (
-            Mesh mesh, Mesh.MeshData meshData, int resolution, JobHandle dependency)
+            Mesh mesh, Mesh.MeshData meshData, NoiseSettings noiseSettings, int resolution, JobHandle dependency)
         {
             var job = new MeshJob<G, S>();
             job.generator.Resolution = resolution;
             job.streams.Setup(
                 meshData,
+                noiseSettings,
                 mesh.bounds = job.generator.Bounds,
                 job.generator.VertexCount,
                 job.generator.IndexCount);
@@ -39,7 +41,7 @@ namespace ProceduralMeshes
     }
 
     public delegate JobHandle MeshJobScheduleDelegate(
-        Mesh mesh, Mesh.MeshData meshData, int resolution, JobHandle dependency);
+        Mesh mesh, Mesh.MeshData meshData, NoiseSettings noiseSettings, int resolution, JobHandle dependency);
     public struct PVertex
     {
         public float3 position, normal;
@@ -49,7 +51,7 @@ namespace ProceduralMeshes
 
     public interface IMeshStreams
     {
-        void Setup(Mesh.MeshData data, Bounds bounds, int vertexCount, int indexCount);
+        void Setup(Mesh.MeshData data, NoiseSettings noiseSettings, Bounds bounds, int vertexCount, int indexCount);
 
         void SetVertex(int index, PVertex data);
 
@@ -104,7 +106,7 @@ namespace ProceduralMeshes.Streams
         [NativeDisableContainerSafetyRestriction]
         NativeArray<TriangleUInt16> triangles;
 
-        public void Setup(Mesh.MeshData meshData, Bounds bounds, int vertexCount, int indexCount)
+        public void Setup(Mesh.MeshData meshData, NoiseSettings noiseSettings, Bounds bounds, int vertexCount, int indexCount)
         {
             NativeArray<VertexAttributeDescriptor> descriptors = new NativeArray<VertexAttributeDescriptor>(
                 4, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
@@ -173,7 +175,7 @@ namespace ProceduralMeshes.Streams
         [NativeDisableContainerSafetyRestriction]
         NativeArray<TriangleUInt16> triangles;
 
-        public void Setup(Mesh.MeshData meshData, Bounds bounds, int vertexCount, int indexCount)
+        public void Setup(Mesh.MeshData meshData, NoiseSettings noiseSettings, Bounds bounds, int vertexCount, int indexCount)
         {
             NativeArray<VertexAttributeDescriptor> descriptors = new NativeArray<VertexAttributeDescriptor>(
                 4, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
@@ -692,9 +694,15 @@ namespace ProceduralMeshes.Generators
             },
         };
 
-        static float3 CubeToSphere(float3 p) => p * sqrt(
-            1f - ((p * p).yxx + (p * p).zzy) / 2f + (p * p).yxx * (p * p).zzy / 3f
-        );
+        static float3 CubeToSphere (float3 p) => p * sqrt(
+			1f - ((p * p).yxx + (p * p).zzy) / 2f + (p * p).yxx * (p * p).zzy / 3f
+		);
+        
+        static float CreateNoise(float3 point)
+        {
+            Noise cNoise = new Noise();
+            return (cNoise.Evaluate(point) + 1) * 0.5f;
+        }
         public void Execute<S>(int i, S streams) where S : struct, IMeshStreams
         {
             int u = i / 6;
@@ -706,7 +714,8 @@ namespace ProceduralMeshes.Generators
             float3 uA = side.uvOrigin + side.uVector * u / Resolution;
             float3 uB = side.uvOrigin + side.uVector * (u + 1) / Resolution;
             float3 pA = CubeToSphere(uA), pB = CubeToSphere(uB);
-
+            //pA = float3(pA.x, Mathf.PerlinNoise(pA.x, pA.z), pA.z);
+            //pB = float3(pB.x, Mathf.PerlinNoise(pB.x, pB.z), pB.z);
             PVertex vertex = new PVertex();
             vertex.tangent = float4(normalize(pB - pA), -1f);
 
@@ -714,25 +723,26 @@ namespace ProceduralMeshes.Generators
             {
                 float3 pC = CubeToSphere(uA + side.vVector * v / Resolution);
                 float3 pD = CubeToSphere(uB + side.vVector * v / Resolution);
-
-
-                vertex.position = pA;
+                //pC = float3(pC.x, Mathf.PerlinNoise(pC.x, pC.z), pC.z);
+                //pD = float3(pD.x, Mathf.PerlinNoise(pD.x, pD.z), pD.z);
+                
+                vertex.position = pA * (1 + CreateNoise(pA));
                 vertex.normal = normalize(cross(pC - pA, vertex.tangent.xyz));
                 vertex.texCoord0 = 0f;
                 streams.SetVertex(vi + 0, vertex);
 
-                vertex.position = pB;
+                vertex.position = pB * (1 + CreateNoise(pB));
                 vertex.normal = normalize(cross(pD - pB, vertex.tangent.xyz));
                 vertex.texCoord0 = float2(1f, 0f);
                 streams.SetVertex(vi + 1, vertex);
 
-                vertex.position = pC;
+                vertex.position = pC * (1 + CreateNoise(pC));
                 vertex.tangent.xyz = normalize(pD - pC);
                 vertex.normal = normalize(cross(pC - pA, vertex.tangent.xyz));
                 vertex.texCoord0 = float2(0f, 1f);
                 streams.SetVertex(vi + 2, vertex);
 
-                vertex.position = pD;
+                vertex.position = pD * (1 + CreateNoise(pD));
                 vertex.texCoord0 = 1f;
                 vertex.normal = normalize(cross(pD -pB, vertex.tangent.xyz));
                 streams.SetVertex(vi + 3, vertex);

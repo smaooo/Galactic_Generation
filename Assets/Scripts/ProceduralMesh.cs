@@ -41,6 +41,8 @@ public class ProceduralMesh : MonoBehaviour
     [SerializeField]
     private Slider slider;
 
+    [SerializeField]
+    private NoiseSettings settings;
     private List<Vector3> vertices, normals;
     private List<Vector4> tangents;
     [SerializeField]
@@ -156,7 +158,7 @@ public class ProceduralMesh : MonoBehaviour
         Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
         Mesh.MeshData meshData = meshDataArray[0];
 
-        jobs[(int)meshType](mesh, meshData, resolution, default).Complete();
+        jobs[(int)meshType](mesh, meshData, settings    , resolution, default).Complete();
         Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
     }
 }
