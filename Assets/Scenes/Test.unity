@@ -1808,9 +1808,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   meshType: 6
-  resolution: 12
+  resolution: 50
   slider: {fileID: 1360204742}
   dropDown: {fileID: 126374154}
+  noiseSettings:
+    center:
+      x: 2.32
+      y: 2.41
+      z: 1.27
+    numLayers: 6
+    roughness: 1.56
+    strength: 0.72
+    persistence: 0.69
+    baseRoughness: 1.52
+    minValue: 1.43
   gizmoMode: 0
 --- !u!23 &1564177257
 MeshRenderer:
@@ -1831,7 +1842,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 73c2983c06da4944aa7639b593975c66, type: 2}
+  - {fileID: 2100000, guid: 161eb56f0a047d74f819f0412079fc7d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

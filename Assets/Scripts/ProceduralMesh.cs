@@ -8,12 +8,15 @@ using UnityEngine.Rendering;
 using UnityEngine.UI;
 using System;
 using System.Linq;
+using Unity.Mathematics;
+using static Unity.Mathematics.math;
 
 //https://catlikecoding.com/unity/tutorials/procedural-meshes/square-grid/
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class ProceduralMesh : MonoBehaviour
 {
+    
 
     static MeshJobScheduleDelegate[] jobs =
     {
@@ -41,12 +44,20 @@ public class ProceduralMesh : MonoBehaviour
     [SerializeField]
     private Slider slider;
 
-    [SerializeField]
-    private NoiseSettings settings;
+    
     private List<Vector3> vertices, normals;
     private List<Vector4> tangents;
     [SerializeField]
     private Dropdown dropDown;
+
+    //[SerializeField]
+    //private float strength = 1f;
+    //[SerializeField]
+    //private float roughness = 1f;
+    //[SerializeField]
+    //private Vector3 center;
+    [SerializeField]
+    public NoiseSettings noiseSettings = new NoiseSettings();
 
     [System.Flags]
     public enum GizmoMode { Nothing = 0, Vertices = 1, Normals = 0b10, Tangents = 0b100}
@@ -71,6 +82,12 @@ public class ProceduralMesh : MonoBehaviour
         GetComponent<MeshFilter>().mesh = mesh;
     }
 
+    //private void ChangeSettings()
+    //{
+    //    NoiseSettings.center = float3(center.x, center.y, center.z);
+    //    NoiseSettings.roughness = roughness;
+    //    NoiseSettings.strength = strength;
+    //}
     public void ChangeValues(Dropdown dropDown)
     {
         meshType = (MeshType)dropDown.value;
@@ -91,6 +108,7 @@ public class ProceduralMesh : MonoBehaviour
     private void Update()
     {
         enabled = false;
+        //ChangeSettings();
         GenerateMesh();
       
         //if ((int)meshType > 4)
@@ -158,7 +176,40 @@ public class ProceduralMesh : MonoBehaviour
         Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
         Mesh.MeshData meshData = meshDataArray[0];
 
-        jobs[(int)meshType](mesh, meshData, settings    , resolution, default).Complete();
+        jobs[(int)meshType](mesh, meshData, resolution, default, noiseSettings).Complete();
         Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
+
+        //var vertices = GetComponent<MeshFilter>().mesh.vertices;
+        //var normals = GetComponent<MeshFilter>().mesh.normals;
+        //List<Vector3>[] vertexNormals = new List<Vector3>[vertices.Length];
+        //var triangles = GetComponent<MeshFilter>().mesh.triangles;
+
+        //for (int i = 0; i < vertexNormals.Length; i++)
+        //{
+        //    vertexNormals[i] = new List<Vector3>();
+        //}
+        //for (int i = 0; i < triangles.Length; i++)
+        //{
+        //    Vector3 curNormal = Vector3.Cross(
+        //        (vertices[triangles[i + 1]] - vertices[triangles[i]]).normalized,
+        //        (vertices[triangles[i + 2]] - vertices[triangles[i]]).normalized);
+
+        //    vertexNormals[triangles[i]].Add(curNormal);
+        //    vertexNormals[triangles[i + 1]].Add(curNormal);
+        //    vertexNormals[triangles[i + 2]].Add(curNormal);
+        //}
+
+        //for (int i = 0; i < vertexNormals.Length; i++)
+        //{
+        //    normals[i] = Vector3.zero;
+        //    float numNormals = vertexNormals[i].Count;
+        //    for (int j = 0; j < numNormals; j++)
+        //    {
+        //        normals[i] += vertexNormals[i][j];
+        //    }
+        //    normals[i] /= numNormals;
+        //}
+        //GetComponent<MeshFilter>().mesh.normals = normals;
+
     }
 }

@@ -4,16 +4,21 @@ libnoise-dotnet is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
+
 libnoise-dotnet is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU Lesser General Public License for more details.
+
 You should have received a copy of the GNU Lesser General Public License
 along with libnoise-dotnet.  If not, see <http://www.gnu.org/licenses/>.
+
 Simplex Noise in 2D, 3D and 4D. Based on the example code of this paper:
 http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf
+
 From Stefan Gustavson, Linkping University, Sweden (stegu at itn dot liu dot se)
 From Karsten Schmidt (slight optimizations & restructuring)
+
 Some changes by Sebastian Lague for use in a tutorial series.
 */
 
@@ -25,33 +30,14 @@ Some changes by Sebastian Lague for use in a tutorial series.
  * -1.0 to +1.0, but there are no guarantees that all output values will exist within that range.
 */
 
-//https://github.com/SebLague/Procedural-Planets/blob/master/Procedural%20Planet%20Noise/Noise.cs
-
 using System;
-using Unity.Mathematics;
-using static Unity.Mathematics.math;
 using Unity.Collections;
 
 public class Noise
 {
     #region Values
     /// Initial permutation table
-    //static readonly int[] Source = {
-    //        151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142,
-    //        8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203,
-    //        117, 35, 11, 32, 57, 177, 33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165,
-    //        71, 134, 139, 48, 27, 166, 77, 146, 158, 231, 83, 111, 229, 122, 60, 211, 133, 230, 220, 105, 92, 41,
-    //        55, 46, 245, 40, 244, 102, 143, 54, 65, 25, 63, 161, 1, 216, 80, 73, 209, 76, 132, 187, 208, 89,
-    //        18, 169, 200, 196, 135, 130, 116, 188, 159, 86, 164, 100, 109, 198, 173, 186, 3, 64, 52, 217, 226, 250,
-    //        124, 123, 5, 202, 38, 147, 118, 126, 255, 82, 85, 212, 207, 206, 59, 227, 47, 16, 58, 17, 182, 189,
-    //        28, 42, 223, 183, 170, 213, 119, 248, 152, 2, 44, 154, 163, 70, 221, 153, 101, 155, 167, 43, 172, 9,
-    //        129, 22, 39, 253, 19, 98, 108, 110, 79, 113, 224, 232, 178, 185, 112, 104, 218, 246, 97, 228, 251, 34,
-    //        242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31,
-    //        181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114,
-    //        67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
-    //    };
-
-    NativeArray<int> Source = new NativeArray<int>(new int[] {
+    static readonly int[] Source = {
             151, 160, 137, 91, 90, 15, 131, 13, 201, 95, 96, 53, 194, 233, 7, 225, 140, 36, 103, 30, 69, 142,
             8, 99, 37, 240, 21, 10, 23, 190, 6, 148, 247, 120, 234, 75, 0, 26, 197, 62, 94, 252, 219, 203,
             117, 35, 11, 32, 57, 177, 33, 88, 237, 149, 56, 87, 174, 20, 125, 136, 171, 168, 68, 175, 74, 165,
@@ -64,12 +50,12 @@ public class Noise
             242, 193, 238, 210, 144, 12, 191, 179, 162, 241, 81, 51, 145, 235, 249, 14, 239, 107, 49, 192, 214, 31,
             181, 199, 106, 157, 184, 84, 204, 176, 115, 121, 50, 45, 127, 4, 150, 254, 138, 236, 205, 93, 222, 114,
             67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
-        }, Allocator.Temp);
+        };
 
     const int RandomSize = 256;
     const double Sqrt3 = 1.7320508075688772935;
     const double Sqrt5 = 2.2360679774997896964;
-    NativeArray<int> _random;
+    //int[] _random;
 
     /// Skewing and unskewing factors for 2D, 3D and 4D, 
     /// some of them pre-multiplied.
@@ -99,27 +85,12 @@ public class Noise
     //    new[] {0, -1, 1}, new[] {0, 1, -1}, new[] {0, -1, -1}
     //};
 
-    NativeArray<NativeArray<int>> Grad3;
+    static NativeArray<int> Grad3 = new NativeArray<int>(36, Allocator.TempJob);
     #endregion
 
     public Noise()
     {
-        Grad3 = new NativeArray<NativeArray<int>>(12, Allocator.Temp);
-        Grad3[0] = new NativeArray<int>(new[] { 1, 1, 0 }, Allocator.Temp);
-        Grad3[1] = new NativeArray<int>(new[] { -1, 1, 0}, Allocator.Temp);
-        Grad3[2] = new NativeArray<int>(new[] { 1, -1, 0}, Allocator.Temp);
-        Grad3[3] = new NativeArray<int>(new[] { -1, -1, 0}, Allocator.Temp);
-        Grad3[4] = new NativeArray<int>(new[] { 1, 0, 1}, Allocator.Temp);
-        Grad3[5] = new NativeArray<int>(new[] { -1, 0, 1}, Allocator.Temp);
-        Grad3[6] = new NativeArray<int>(new[] { 1, 0, -1}, Allocator.Temp);
-        Grad3[7] = new NativeArray<int>(new[] { -1, 0, -1}, Allocator.Temp);
-        Grad3[8] = new NativeArray<int>(new[] { 0, 1, 1}, Allocator.Temp);
-        Grad3[9] = new NativeArray<int>(new[] { 0, -1, 1}, Allocator.Temp);
-        Grad3[10] = new NativeArray<int>(new[] { 0, 1, 1}, Allocator.Temp);
-        Grad3[11] = new NativeArray<int>(new[] { 0, -1, -1}, Allocator.Temp);
-        
         Randomize(0);
-        
     }
 
     public Noise(int seed)
@@ -131,8 +102,9 @@ public class Noise
     /// <summary>
     /// Generates value, typically in range [-1, 1]
     /// </summary>
-    public float Evaluate(float3 point)
+    public static float Evaluate(UnityEngine.Vector3 point)
     {
+        NativeArray<int> _random = new NativeArray<int>(Randomize(0), Allocator.TempJob);
         double x = point.x;
         double y = point.y;
         double z = point.z;
@@ -255,6 +227,51 @@ public class Noise
         int ii = i & 0xff;
         int jj = j & 0xff;
         int kk = k & 0xff;
+        //    static readonly int[][] Grad3 =
+        //{
+        //    new[] {1, 1, 0}, new[] {-1, 1, 0}, new[] {1, -1, 0},
+        //    new[] {-1, -1, 0}, new[] {1, 0, 1}, new[] {-1, 0, 1},
+        //    new[] {1, 0, -1}, new[] {-1, 0, -1}, new[] {0, 1, 1},
+        //    new[] {0, -1, 1}, new[] {0, 1, -1}, new[] {0, -1, -1}
+        //};
+
+        Grad3[0] = 1;
+        Grad3[1] = 1;
+        Grad3[2] = 0;
+        Grad3[3] = -1;
+        Grad3[4] = 1;
+        Grad3[5] = 0;
+        Grad3[6] = 1;
+        Grad3[7] = -1;
+        Grad3[8] = 0;
+        Grad3[9] = -1;
+        Grad3[10] = -1;
+        Grad3[11] = 0;
+        Grad3[12] = 1;
+        Grad3[13] = 0;
+        Grad3[14] = 1;
+        Grad3[15] = -1;
+        Grad3[16] = 0;
+        Grad3[17] = 1;
+        Grad3[18] = 1;
+        Grad3[19] = 0;
+        Grad3[20] = -1;
+        Grad3[21] = -1;
+        Grad3[22] = 0;
+        Grad3[23] = -1;
+        Grad3[24] = 0;
+        Grad3[25] = 1;
+        Grad3[26] = 1;
+        Grad3[27] = 0;
+        Grad3[28] = -1;
+        Grad3[29] = 1;
+        Grad3[30] = 0;
+        Grad3[31] = 1;
+        Grad3[32] = -1;
+        Grad3[33] = 0;
+        Grad3[34] = -1;
+        Grad3[35] = -1;
+        
 
         // Calculate the contribution from the four corners
         double t0 = 0.6 - x0 * x0 - y0 * y0 - z0 * z0;
@@ -262,7 +279,7 @@ public class Noise
         {
             t0 *= t0;
             int gi0 = _random[ii + _random[jj + _random[kk]]] % 12;
-            n0 = t0 * t0 * Dot(Grad3[gi0], x0, y0, z0);
+            n0 = t0 * t0 * Dot(Grad3[gi0 * 3], Grad3[(gi0 * 3) + 1], Grad3[(gi0 * 3) + 2], x0, y0, z0);
         }
 
         double t1 = 0.6 - x1 * x1 - y1 * y1 - z1 * z1;
@@ -270,7 +287,7 @@ public class Noise
         {
             t1 *= t1;
             int gi1 = _random[ii + i1 + _random[jj + j1 + _random[kk + k1]]] % 12;
-            n1 = t1 * t1 * Dot(Grad3[gi1], x1, y1, z1);
+            n1 = t1 * t1 * Dot(Grad3[gi1 * 3], Grad3[(gi1 * 3) + 1], Grad3[(gi1 * 3) + 2], x1, y1, z1);
         }
 
         double t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
@@ -278,7 +295,7 @@ public class Noise
         {
             t2 *= t2;
             int gi2 = _random[ii + i2 + _random[jj + j2 + _random[kk + k2]]] % 12;
-            n2 = t2 * t2 * Dot(Grad3[gi2], x2, y2, z2);
+            n2 = t2 * t2 * Dot(Grad3[gi2 * 3], Grad3[(gi2 * 3) + 1], Grad3[(gi2 * 3) + 2], x2, y2, z2);
         }
 
         double t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
@@ -286,18 +303,20 @@ public class Noise
         {
             t3 *= t3;
             int gi3 = _random[ii + 1 + _random[jj + 1 + _random[kk + 1]]] % 12;
-            n3 = t3 * t3 * Dot(Grad3[gi3], x3, y3, z3);
+            n3 = t3 * t3 * Dot(Grad3[gi3 * 3], Grad3[(gi3 * 3) + 1], Grad3[(gi3 * 3) + 2], x3, y3, z3);
         }
 
         // Add contributions from each corner to get the final noise value.
         // The result is scaled to stay just inside [-1,1]
+        _random.Dispose();
+        Grad3.Dispose();
         return (float)(n0 + n1 + n2 + n3) * 32;
     }
 
 
-    void Randomize(int seed)
+    static NativeArray<int> Randomize(int seed)
     {
-        _random = new NativeArray<int>(RandomSize * 2, Allocator.Temp);
+        NativeArray<int> _random = new NativeArray<int>(RandomSize * 2, Allocator.Temp);
 
         if (seed != 0)
         {
@@ -323,22 +342,17 @@ public class Noise
             for (int i = 0; i < RandomSize; i++)
                 _random[i + RandomSize] = _random[i] = Source[i];
         }
+
+        return _random;
     }
 
-    static double Dot(NativeArray<int> g, double x, double y, double z, double t)
+ 
+    static double Dot(int i, int j, int k, double x, double y, double z)
     {
-        return g[0] * x + g[1] * y + g[2] * z + g[3] * t;
+        return i * x + j * y + k * z;
     }
 
-    static double Dot(NativeArray<int> g, double x, double y, double z)
-    {
-        return g[0] * x + g[1] * y + g[2] * z;
-    }
-
-    static double Dot(NativeArray<int> g, double x, double y)
-    {
-        return g[0] * x + g[1] * y;
-    }
+   
 
     static int FastFloor(double x)
     {
