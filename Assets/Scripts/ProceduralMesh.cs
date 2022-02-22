@@ -22,13 +22,14 @@ public class ProceduralMesh : MonoBehaviour
         MeshJob<SharedTriangleGrid, SingleStream>.ScheduleParallel,
         MeshJob<PointyHexagonGrid, SingleStream>.ScheduleParallel,
         MeshJob<FlatHexagonGrid, SingleStream>.ScheduleParallel,
-        MeshJob<UVSphere, SingleStream>.ScheduleParallel
+        MeshJob<UVSphere, SingleStream>.ScheduleParallel,
+        MeshJob<CubeSphere, SingleStream>.ScheduleParallel
     };
 
     public enum MeshType
     {
         SquareGrid, SharedSquareGrid, SharedTriangleGrid, PointyHexagonGrid, FlatHexagonGrid,
-        UVSphere
+        UVSphere, CubeSphere
     }
 
     [SerializeField]
@@ -49,7 +50,6 @@ public class ProceduralMesh : MonoBehaviour
     public enum GizmoMode { Nothing = 0, Vertices = 1, Normals = 0b10, Tangents = 0b100}
     [SerializeField]
     private GizmoMode gizmoMode;
-
     private void Awake()
     {
         List<string> options = new List<string>();
@@ -90,17 +90,18 @@ public class ProceduralMesh : MonoBehaviour
     {
         enabled = false;
         GenerateMesh();
-        if ((int)meshType > 4)
-        {
-            GetComponent<MeshRenderer>().material.EnableKeyword("_TEXTUREMODE_TILEMAP");
-            GetComponent<MeshRenderer>().material.DisableKeyword("_TEXTUREMODE_UVMAP");
-        }
-        else
-        {
-            GetComponent<MeshRenderer>().material.EnableKeyword("_TEXTUREMODE_UVMAP");
-            GetComponent<MeshRenderer>().material.DisableKeyword("_TEXTUREMODE_TILEMAP");
+      
+        //if ((int)meshType > 4)
+        //{
+        //    GetComponent<MeshRenderer>().material.EnableKeyword("_TEXTUREMODE_TILEMAP");
+        //    GetComponent<MeshRenderer>().material.DisableKeyword("_TEXTUREMODE_UVMAP");
+        //}
+        //else
+        //{
+        //    GetComponent<MeshRenderer>().material.EnableKeyword("_TEXTUREMODE_UVMAP");
+        //    GetComponent<MeshRenderer>().material.DisableKeyword("_TEXTUREMODE_TILEMAP");
 
-        }
+        //}
         vertices = new List<Vector3>();
         normals = new List<Vector3>();
         tangents = new List<Vector4>();
