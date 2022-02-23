@@ -10,6 +10,7 @@ using System;
 using System.Linq;
 using Unity.Mathematics;
 using static Unity.Mathematics.math;
+using Unity.Collections;
 
 //https://catlikecoding.com/unity/tutorials/procedural-meshes/square-grid/
 
@@ -56,9 +57,11 @@ public class ProceduralMesh : MonoBehaviour
     //private float roughness = 1f;
     //[SerializeField]
     //private Vector3 center;
-    [SerializeField]
-    public NoiseSettings noiseSettings = new NoiseSettings();
+    //[SerializeField]
+    //public NoiseSettings noiseSettings = new NoiseSettings();
 
+    [SerializeField]
+    private NoiseLayer[] noiseLayers;
     [System.Flags]
     public enum GizmoMode { Nothing = 0, Vertices = 1, Normals = 0b10, Tangents = 0b100}
     [SerializeField]
@@ -170,15 +173,29 @@ public class ProceduralMesh : MonoBehaviour
             }
         }
     }
-
+   
     private void GenerateMesh()
     {
         Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
         Mesh.MeshData meshData = meshDataArray[0];
 
-        jobs[(int)meshType](mesh, meshData, resolution, default, noiseSettings).Complete();
-        Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
+        //NativeArray<NoiseLayer> pass = new NativeArray<NoiseLayer>(noiseLayers, Allocator.Persistent);
+        Passer passer = new Passer
+        {
+            nl1 = noiseLayers[0].active ? noiseLayers[0] : new NoiseLayer(),
+            nl2 = noiseLayers[1].active ? noiseLayers[1] : new NoiseLayer(),
+            nl3 = noiseLayers[2].active ? noiseLayers[2] : new NoiseLayer(),
+            nl4 = noiseLayers[3].active ? noiseLayers[3] : new NoiseLayer()
+        };
 
+        //for (int i = 0; i < noiseLayers.Length; i++)
+        //{
+        //    noiseLayersNative[i] = noiseLayers[i];
+        //}
+
+        jobs[(int)meshType](mesh, meshData, resolution, default, passer).Complete();
+        Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
+        //pass.Dispose();
         //var vertices = GetComponent<MeshFilter>().mesh.vertices;
         //var normals = GetComponent<MeshFilter>().mesh.normals;
         //List<Vector3>[] vertexNormals = new List<Vector3>[vertices.Length];
