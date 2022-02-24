@@ -111,20 +111,9 @@ public class ProceduralMesh : MonoBehaviour
     private void Update()
     {
         enabled = false;
-        //ChangeSettings();
         GenerateMesh();
       
-        //if ((int)meshType > 4)
-        //{
-        //    GetComponent<MeshRenderer>().material.EnableKeyword("_TEXTUREMODE_TILEMAP");
-        //    GetComponent<MeshRenderer>().material.DisableKeyword("_TEXTUREMODE_UVMAP");
-        //}
-        //else
-        //{
-        //    GetComponent<MeshRenderer>().material.EnableKeyword("_TEXTUREMODE_UVMAP");
-        //    GetComponent<MeshRenderer>().material.DisableKeyword("_TEXTUREMODE_TILEMAP");
-
-        //}
+   
         vertices = new List<Vector3>();
         normals = new List<Vector3>();
         tangents = new List<Vector4>();
@@ -188,45 +177,11 @@ public class ProceduralMesh : MonoBehaviour
             nl4 = noiseLayers[3].active ? noiseLayers[3] : new NoiseLayer()
         };
 
-        //for (int i = 0; i < noiseLayers.Length; i++)
-        //{
-        //    noiseLayersNative[i] = noiseLayers[i];
-        //}
-
+        
         jobs[(int)meshType](mesh, meshData, resolution, default, passer).Complete();
+        
         Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
-        //pass.Dispose();
-        //var vertices = GetComponent<MeshFilter>().mesh.vertices;
-        //var normals = GetComponent<MeshFilter>().mesh.normals;
-        //List<Vector3>[] vertexNormals = new List<Vector3>[vertices.Length];
-        //var triangles = GetComponent<MeshFilter>().mesh.triangles;
 
-        //for (int i = 0; i < vertexNormals.Length; i++)
-        //{
-        //    vertexNormals[i] = new List<Vector3>();
-        //}
-        //for (int i = 0; i < triangles.Length; i++)
-        //{
-        //    Vector3 curNormal = Vector3.Cross(
-        //        (vertices[triangles[i + 1]] - vertices[triangles[i]]).normalized,
-        //        (vertices[triangles[i + 2]] - vertices[triangles[i]]).normalized);
-
-        //    vertexNormals[triangles[i]].Add(curNormal);
-        //    vertexNormals[triangles[i + 1]].Add(curNormal);
-        //    vertexNormals[triangles[i + 2]].Add(curNormal);
-        //}
-
-        //for (int i = 0; i < vertexNormals.Length; i++)
-        //{
-        //    normals[i] = Vector3.zero;
-        //    float numNormals = vertexNormals[i].Count;
-        //    for (int j = 0; j < numNormals; j++)
-        //    {
-        //        normals[i] += vertexNormals[i][j];
-        //    }
-        //    normals[i] /= numNormals;
-        //}
-        //GetComponent<MeshFilter>().mesh.normals = normals;
 
     }
 }
