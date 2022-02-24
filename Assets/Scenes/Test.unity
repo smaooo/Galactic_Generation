@@ -11424,6 +11424,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   starPre: {fileID: 1533875261873547426, guid: f8874f5e7c081bc4eb6d484995a98e4a, type: 3}
+  planetMaterial: {fileID: 2100000, guid: 161eb56f0a047d74f819f0412079fc7d, type: 2}
 --- !u!4 &1470592935
 Transform:
   m_ObjectHideFlags: 0
@@ -11432,7 +11433,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1470592933}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -27.482517, y: -33.076878, z: -2.0056849}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

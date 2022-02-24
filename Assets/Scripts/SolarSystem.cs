@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using GalaxyObject;
 
 public class SolarSystem : MonoBehaviour
 {
@@ -8,18 +9,49 @@ public class SolarSystem : MonoBehaviour
     private GameObject starPre;
     private ParticleSystem starParticle;
     private GameObject star;
+    [SerializeField]
+    private Material planetMaterial;
 
     private void Start()
     {
         
-        star = new GameObject();
+
         
         star = Instantiate(starPre, this.transform);
         
         SetupStarParticle(starPre.GetComponent<ParticleSystem>());
 
+        //GameObject planet = new GameObject();
+        //var pM = planet.AddComponent<ProceduralMesh>();
+        //pM.meshType = ProceduralMesh.MeshType.UVSphere;
+        GeneratePlanets(star.transform, planetMaterial);
+        
     }
     
+    private static void GeneratePlanets(Transform star, Material planetMaterial)
+    {
+        int num = Random.Range(1, 10);
+        float distance = 0f;
+        
+        for (int i = 0; i < num; i++)
+        {
+            distance += Random.Range(100f, 500f);
+            float radius = Random.Range(0.5f, 4f);
+            int numMoons = 0;
+            if (radius > 1)
+            {
+                numMoons = (int)(Random.Range(5, 10));
+
+            }
+            else
+            {
+                numMoons = (int)(Random.Range(0, 5) * radius);
+
+            }
+            Debug.Log(numMoons);
+            Planet planet = new Planet(planetMaterial, distance, radius, star, numMoons);
+        }
+    }
     private static void SetupStarParticle(ParticleSystem particle)
     {
         var main = particle.main;
@@ -48,6 +80,8 @@ public class SolarSystem : MonoBehaviour
                 new GradientAlphaKey(1f,0f), new GradientAlphaKey(1f,0.5f)});
 
         colorBySpeed.color = colorGrad;
+
+        
     }
 
 
