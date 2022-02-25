@@ -4,7 +4,7 @@ using UnityEngine;
 using ProceduralMeshes;
 using ProceduralMeshes.Generators;
 using ProceduralMeshes.Streams;
-
+using System.Linq;
 
 namespace GalaxyObject
 {
@@ -13,6 +13,15 @@ namespace GalaxyObject
         Planet[] planets;
         Star star;
         GameObject[] lights;
+
+        public struct Relations
+        {
+            public int id;
+            public string type;
+            public float radius;
+            public Transform transform;
+            public Planet planet;
+        }
 
         public SolarSystem(Transform parent, Material planetMaterial, GameObject gas)
         {
@@ -25,40 +34,55 @@ namespace GalaxyObject
             {
                 distance += Random.Range(10000f, 10000f);
 
-                this.planets[i] = Random.Range(0f, 1f) <= 0.3f && i > 2 ? new Planet(gas, planetMaterial, distance, Random.Range(0.5f, 5f), parent, this.star)
-                    : new Planet(planetMaterial, distance, Random.Range(5f, 40f), parent, this.star);
+                this.planets[i] = Random.Range(0f, 1f) <= 0.3f && i > 2 ? new Planet(this, gas, planetMaterial, distance, Random.Range(0.5f, 5f), parent)
+                    : new Planet(this, planetMaterial, distance, Random.Range(5f, 40f), parent);
 
             }
 
-            CreateLights();
+
+
+            List<Relations> relations = new List<Relations>();
+            for (int i = 0; i < this.planets.Length; i++)
+            {
+                var p = this.planets[i];
+                relations.Add(new Relations
+                {
+                    id = i,
+                    type = "PLANET",
+                    radius = p.Radius,
+                    transform = p.PlanetTransform
+                });
+                for (int j = 0; j < this.planets[i].Moons.Length; j++)
+                {
+                    var m = p.Moons[j];
+                    relations.Add(new Relations
+                    {
+                        id = j,
+                        type = "MOON",
+                        radius = m.Radius,
+                        transform = m.MoonTransform,
+                        planet = p
+                    });
+                }
+            }
+
+            Generator.GenerateLights(ref this.lights, this, relations);
+
+
+
         }
 
-        
+
         public Planet[] Planets
         {
             get { return this.planets; }
         }
 
-        private void CreateLights()
+        public Star Star
         {
-            this.lights = new GameObject[this.planets.Length];
-
-            for (int i = 0; i < this.planets.Length; i++)
-
-            {
-                this.lights[i] = new GameObject("LightTo_" + this.planets[i].PlanetObject.name);
-
-                this.lights[i].transform.SetParent(this.star.StarTransform);
-                this.lights[i].transform.position = (this.planets[i].PlanetTransform.position - this.star.StarTransform.position) * 0.98f;
-                var l = this.lights[i].AddComponent<Light>();
-                l.type = LightType.Spot;
-                this.lights[i].transform.rotation = Quaternion.LookRotation(this.planets[i].PlanetTransform.position - this.star.StarTransform.position);
-                l.range = (this.planets[i].PlanetTransform.position - this.star.StarTransform.position).magnitude * 0.04f;
-                l.intensity = 20000f;
-                l.innerSpotAngle = this.planets[i].Radius * Mathf.Deg2Rad * 180f;
-            }
-            
+            get { return this.star; }
         }
+      
     }
 
 
@@ -78,8 +102,8 @@ namespace GalaxyObject
             var particle = this.star.GetComponent<ParticleSystem>();
             var main = particle.main;
             
-            float colorMin = 0f;
-            float colorMax = 0f;
+            float colorMin;
+            float colorMax;
 
             float randomSelect = Random.Range(0f, 1f);
             if (randomSelect <= 0.2f)
@@ -159,17 +183,19 @@ namespace GalaxyObject
         Material material;
         float radius;
         float offset;
-        GameObject[] lights;
         Star star;
-        public Planet(Material material, float offset, float radius, Transform parent, Star star)
+        SolarSystem solarSystem;
+
+        public Planet(SolarSystem solarSystem, Material material, float offset, float radius, Transform parent)
         {
             this.planet = new GameObject("Planet" + GetHashCode());
             this.mesh = new Mesh { name = this.planet.name};
             this.material = material;
             this.radius = radius;
             this.offset = offset;
-            this.star = star;
-
+            this.solarSystem = solarSystem;
+            this.star = this.solarSystem.Star;
+            
             this.planet.AddComponent<MeshRenderer>().material = material;
             this.planet.AddComponent<MeshFilter>().mesh = this.mesh;
             this.planet.transform.SetParent(parent);
@@ -188,17 +214,17 @@ namespace GalaxyObject
 
             this.moons = new Moon[numberOfMoons];
             GenerateMoons();
-            CreateLights();
-
+            
         }
 
-        public Planet(GameObject gas, Material material, float offset, float radius, Transform parent, Star star)
+        public Planet(SolarSystem solarSystem, GameObject gas, Material material, float offset, float radius, Transform parent)
         {
             this.planet = GameObject.Instantiate(gas, parent);
             this.planet.name = "GasPlanet" + GetHashCode();
             this.radius = radius;
             this.material = material;
-            this.star = star;
+            this.solarSystem = solarSystem;
+            this.star = this.solarSystem.Star;
 
             this.planet.transform.localScale = Vector3.one * radius;
 
@@ -214,31 +240,10 @@ namespace GalaxyObject
 
             GenerateMoons();
 
-            CreateLights();
-
 
         }
 
-        private void CreateLights()
-        {
-            this.lights = new GameObject[this.moons.Length];
-            
-            for (int i = 0; i < this.moons.Length; i++)
-            {
-                this.lights[i] = new GameObject("LightTo_" + this.moons[i].MoonObject.name);
-
-                Debug.Log(lights[i]);
-                this.lights[i].transform.SetParent(this.planet.transform);
-                this.lights[i].transform.position = (this.moons[i].MoonTransform.position - this.star.StarTransform.position) * 0.995f;
-                var l = this.lights[i].AddComponent<Light>();
-                l.type = LightType.Spot;
-                this.lights[i].transform.rotation = Quaternion.LookRotation(this.moons[i].MoonTransform.position - this.star.StarTransform.position);
-                l.range = (this.moons[i].MoonTransform.position - this.star.StarTransform.position).magnitude * 0.01f;
-                l.intensity = 10000f;
-                l.innerSpotAngle = this.moons[i].Radius * Mathf.Deg2Rad * 180f;
-            }
-
-        }
+      
 
 
         public GameObject PlanetObject
@@ -287,6 +292,8 @@ namespace GalaxyObject
                 
                 moons[i] = new Moon(this, this.material, mOffset, mRadius);
             }
+            
+
         }
     }
 
@@ -295,11 +302,13 @@ namespace GalaxyObject
 
         Mesh mesh;
         GameObject moon;
+        Planet planet;
 
         public Moon(Planet planet, Material material, float offset, float radius)
         {
             this.moon = new GameObject(planet.PlanetObject.name + "_Moon" + GetHashCode());
             this.mesh = new Mesh { name = this.moon.name };
+            this.planet = planet;
 
             moon.AddComponent<MeshRenderer>().material = material;
             moon.AddComponent<MeshFilter>().mesh = this.mesh;
@@ -360,5 +369,52 @@ namespace GalaxyObject
             Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
 
         }
+
+        public static void GenerateLights(ref GameObject[] lights, SolarSystem ss, List<SolarSystem.Relations> relations)
+        {
+            float intensity;
+            float innerSpotAngle;
+            float range;
+            float offset;
+
+            lights = new GameObject[relations.Count];
+
+            for (int i = 0; i < relations.Count; i++)
+            {
+                var r = relations[i];
+
+                if (r.planet != null)
+                {
+                    offset = 0.995f;
+                    range = 0.006f;
+                    intensity = 10000f;
+                }
+                else
+                {
+                    offset = 0.99f;
+                    range = 0.02f;
+                    intensity = 20000f;
+                }
+
+                lights[i] = new GameObject("LightTo_" + r.transform.gameObject.name);
+                Vector3 distance = r.transform.position - ss.Star.StarTransform.position;
+                lights[i].transform.SetParent(ss.Star.StarTransform);
+
+                lights[i].transform.position = distance * offset;
+                var l = lights[i].AddComponent<Light>();
+                l.type = LightType.Spot;
+                lights[i].transform.rotation = Quaternion.LookRotation(distance);
+                l.range = distance.magnitude * range;
+                l.intensity = intensity;
+                l.innerSpotAngle = (r.radius) * Mathf.Deg2Rad * 180f;
+                
+            }
+
+           
+
+        }
+
+
+        
     }
 }
