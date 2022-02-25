@@ -113,10 +113,7 @@ public class ProceduralMesh : MonoBehaviour
         enabled = false;
         GenerateMesh();
       
-   
-        vertices = new List<Vector3>();
-        normals = new List<Vector3>();
-        tangents = new List<Vector4>();
+
     }
 
     private void OnDrawGizmos()

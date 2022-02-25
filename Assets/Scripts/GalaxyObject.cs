@@ -4,7 +4,10 @@ using UnityEngine;
 using ProceduralMeshes;
 using ProceduralMeshes.Generators;
 using ProceduralMeshes.Streams;
-using System.Linq;
+using Unity.Mathematics;
+using static Unity.Mathematics.math;
+using static Unity.Mathematics.noise;
+using Random = UnityEngine.Random;
 
 namespace GalaxyObject
 {
@@ -26,7 +29,7 @@ namespace GalaxyObject
         public SolarSystem(Transform parent, Material planetMaterial, GameObject gas)
         {
             this.star = new Star(gas, parent);
-
+            
             this.planets = new Planet[Random.Range(1, 10)];
             float distance = 0f;
 
@@ -89,6 +92,7 @@ namespace GalaxyObject
     public class Star
     {
         GameObject star;
+        Color initColor;
 
         public Star(GameObject starPrefab, Transform parent)
         {
@@ -131,7 +135,8 @@ namespace GalaxyObject
                 colorMin = 0.95f;
                 colorMax = 1f;
             }
-            main.startColor = Color.HSVToRGB(Random.Range(colorMin, colorMax), Random.Range(0.5f, 1f), 1f);
+            this.initColor = Color.HSVToRGB(Random.Range(colorMin, colorMax), Random.Range(0.5f, 1f), 1f);
+            main.startColor = this.initColor;
             
             this.star.GetComponent<ParticleSystemRenderer>().material.SetVector("_EmissionColor", 
                 new Vector4(main.startColor.color.r, main.startColor.color.g, main.startColor.color.b,
@@ -165,6 +170,10 @@ namespace GalaxyObject
             get { return this.star; }
         }
 
+        public Color Color
+        {
+            get { return this.initColor; }
+        }
         public Transform StarTransform
         {
             get { return this.star.transform; }
@@ -200,11 +209,11 @@ namespace GalaxyObject
             this.planet.AddComponent<MeshFilter>().mesh = this.mesh;
             this.planet.transform.SetParent(parent);
             
-            Generator.GenerateMesh(this.mesh);
 
             this.planet.transform.localScale = Vector3.one * radius;
 
             this.planet.transform.position = new Vector3(offset, 0f, offset);
+            Generator.GenerateMesh(this.mesh, this.planet.transform);
 
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.up, Random.Range(0f,360f));
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.right, Random.Range(0f,360f));
@@ -313,12 +322,11 @@ namespace GalaxyObject
             moon.AddComponent<MeshRenderer>().material = material;
             moon.AddComponent<MeshFilter>().mesh = this.mesh;
             moon.transform.SetParent(planet.PlanetObject.transform);
-            Generator.GenerateMesh(this.mesh);
 
 
             this.moon.transform.localScale = Vector3.one * radius;
 
-            float actRadius = this.moon.GetComponent<MeshRenderer>().bounds.size.x / 2;
+            Generator.GenerateMesh(this.mesh, this.moon.transform);
             this.moon.transform.position = new Vector3(offset, 0f, offset);
 
             Transform pl = planet.PlanetObject.transform;
@@ -348,9 +356,85 @@ namespace GalaxyObject
     {
         static MeshJobScheduleDelegate meshJob = MeshJob<CubeSphere, SingleStream>.ScheduleParallel;
 
-        public static void GenerateMesh(Mesh mesh)
+        public static void GenerateMesh(Mesh mesh, Transform transform)
         {
             NoiseLayer[] noiseLayers = new NoiseLayer[4];
+
+            noiseLayers[0] = new NoiseLayer
+            {
+                active = true,
+                useFirstLayerAsMask = false,
+                noiseSettings = new NoiseSettings
+                {
+                    center = float3(
+                            snoise(transform.position) * Random.Range(-100f, 100f),
+                            snoise(transform.position) * Random.Range(-100f, 100f),
+                            snoise(transform.position) * Random.Range(-100f, 100f)),
+                    numLayers = Random.Range(1, 4),
+                    roughness = Random.Range(0f, 1f),
+                    strength = Random.Range(0f, 0.1f),
+                    persistence = Random.Range(0f, 1.2f),
+                    baseRoughness = Random.Range(0f, 2f),
+                    minValue = Random.Range(0f, 2.5f)
+
+
+                }
+            };
+
+            noiseLayers[1] = new NoiseLayer
+            {
+                active = true,
+                useFirstLayerAsMask = Random.Range(0f, 1f) > 0.3f ? true : false,
+                noiseSettings = new NoiseSettings
+                {
+                    center = float3(
+                            snoise(transform.position) * Random.Range(-100f, 100f),
+                            snoise(transform.position) * Random.Range(-100f, 100f),
+                            snoise(transform.position) * Random.Range(-100f, 100f)),
+                    numLayers = Random.Range(1, 4),
+                    roughness = Random.Range(0f, 50f),
+                    strength = noiseLayers[1].useFirstLayerAsMask ? Random.Range(-1f, 1f) : Random.Range(-0.1f, 0.1f),
+                    persistence = noiseLayers[1].useFirstLayerAsMask ? Random.Range(0f, 10f) : Random.Range(-5f, 1f),
+                    baseRoughness = noiseLayers[1].useFirstLayerAsMask ? Random.Range(0f, 10f) : Random.Range(-1f, 1f),
+                    minValue = noiseLayers[1].useFirstLayerAsMask ? Random.Range(-5f, 0f) : Random.Range(0f, 1f)
+
+                }
+            };
+
+            noiseLayers[2] = new NoiseLayer
+            {
+                active = true,
+                useFirstLayerAsMask = false,
+                noiseSettings = new NoiseSettings
+                {
+                    center = float3(
+                            snoise(transform.position) * Random.Range(-100f, 100f),
+                            snoise(transform.position) * Random.Range(-100f, 100f),
+                            snoise(transform.position) * Random.Range(-100f, 100f)),
+                    numLayers = Random.Range(1, 4),
+                    roughness = Random.Range(0f, 5f),
+                    strength = Random.Range(-0.5f, 0.5f),
+                    persistence = Random.Range(-0.3f, 0.3f),
+                    baseRoughness = Random.Range(0f, 2f),
+                    minValue = Random.Range(0f, 1f)
+                }
+            };
+
+            noiseLayers[3] = new NoiseLayer
+            {
+                active = true,
+                useFirstLayerAsMask = Random.Range(0f, 1f) > 0.3f ? true : false,
+                noiseSettings = new NoiseSettings
+                {
+                    numLayers = Random.Range(1, 4),
+                    roughness = Random.Range(0f, 50f),
+                    strength = Random.Range(-0.5f, 1f),
+                    persistence = Random.Range(0f, 0.3f),
+                    baseRoughness = Random.Range(-5f, 5f),
+                    minValue = Random.Range(-2f, 1f)
+
+                }
+            };
 
             Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
             Mesh.MeshData meshData = meshDataArray[0];
@@ -373,7 +457,6 @@ namespace GalaxyObject
         public static void GenerateLights(ref GameObject[] lights, SolarSystem ss, List<SolarSystem.Relations> relations)
         {
             float intensity;
-            float innerSpotAngle;
             float range;
             float offset;
 
@@ -385,8 +468,8 @@ namespace GalaxyObject
 
                 if (r.planet != null)
                 {
-                    offset = 0.995f;
-                    range = 0.006f;
+                    offset = 0.996f;
+                    range = 0.008f;
                     intensity = 10000f;
                 }
                 else
@@ -407,7 +490,7 @@ namespace GalaxyObject
                 l.range = distance.magnitude * range;
                 l.intensity = intensity;
                 l.innerSpotAngle = (r.radius) * Mathf.Deg2Rad * 180f;
-                
+                   
             }
 
            

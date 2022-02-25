@@ -25,13 +25,6 @@ namespace ProceduralMeshes
         public float persistence;
         public float baseRoughness;
         public float minValue;
-
-        
-        public int NL { get { return numLayers == 0 ? 1 : numLayers; } set { numLayers = value; } }
-        public float R { get { return roughness == 0 ? 2f : roughness; } set { roughness = value; } }
-        public float S { get { return strength == 0 ? 1f : strength; } set { strength = value; } }
-        public float P { get { return persistence == 0 ? 0.5f : persistence; } set { persistence = value; } }
-        public float BR { get { return baseRoughness == 0 ? 1f : baseRoughness; } set { baseRoughness = value; } }
     }
 
    
