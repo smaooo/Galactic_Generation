@@ -8,6 +8,12 @@ using Unity.Mathematics;
 using static Unity.Mathematics.math;
 using static Unity.Mathematics.noise;
 using Random = UnityEngine.Random;
+using Rand = Unity.Mathematics.Random;
+using Unity.Jobs;
+using Unity.Burst;
+using Unity.Collections;
+using UnityEngine.Jobs;
+using System.Linq;
 
 namespace GalaxyObject
 {
@@ -71,6 +77,7 @@ namespace GalaxyObject
 
             Generator.GenerateLights(ref this.lights, this, relations);
 
+            //StaticOcclusionCulling.Compute();
 
 
         }
@@ -97,7 +104,14 @@ namespace GalaxyObject
         public Star(GameObject starPrefab, Transform parent)
         {
             this.star = GameObject.Instantiate(starPrefab, parent);
+            this.star.isStatic = true;
+            //var lod = this.star.AddComponent<LODGroup>();
 
+            //LOD l1 = new LOD(1f,);
+            //LOD l2 = new LOD();
+            //LOD l3 = new LOD();
+
+            //lod.SetLODs(new LOD[] { l1, l2, l3 });
             SetupStar();
         }
 
@@ -194,10 +208,13 @@ namespace GalaxyObject
         float offset;
         Star star;
         SolarSystem solarSystem;
-
+        Mesh[] lodMeshes;
+        Belt[] belt;
+        
         public Planet(SolarSystem solarSystem, Material material, float offset, float radius, Transform parent)
         {
             this.planet = new GameObject("Planet" + GetHashCode());
+            this.planet.isStatic = true;
             this.mesh = new Mesh { name = this.planet.name};
             this.material = material;
             this.radius = radius;
@@ -213,7 +230,7 @@ namespace GalaxyObject
             this.planet.transform.localScale = Vector3.one * radius;
 
             this.planet.transform.position = new Vector3(offset, 0f, offset);
-            Generator.GenerateMesh(this.mesh, this.planet.transform);
+            Generator.GenerateMesh(this.mesh, this.planet.transform, ref lodMeshes);
 
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.up, Random.Range(0f,360f));
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.right, Random.Range(0f,360f));
@@ -229,8 +246,8 @@ namespace GalaxyObject
         public Planet(SolarSystem solarSystem, GameObject gas, Material material, float offset, float radius, Transform parent)
         {
             this.planet = GameObject.Instantiate(gas, parent);
+            this.planet.isStatic = true;
             this.planet.name = "GasPlanet" + GetHashCode();
-            this.radius = radius;
             this.material = material;
             this.solarSystem = solarSystem;
             this.star = this.solarSystem.Star;
@@ -242,13 +259,14 @@ namespace GalaxyObject
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.up, Random.Range(0f, 360f));
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.right, Random.Range(0f, 360f));
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.forward, Random.Range(0f, 360f));
-
+            this.radius = this.planet.GetComponent<ParticleSystemRenderer>().bounds.size.x / 2;
             int numberOfMoons = (int)(Random.Range(5, 10));
 
             this.moons = new Moon[numberOfMoons];
 
             GenerateMoons();
 
+            GenerateBelt();
 
         }
 
@@ -304,7 +322,112 @@ namespace GalaxyObject
             
 
         }
+
+        [BurstCompile(FloatPrecision.Standard, FloatMode.Fast, CompileSynchronously = true)]
+        public struct BeltGenerator : IJobFor
+        {
+            public NativeArray<float3> positions;
+            public NativeArray<float> scales;
+            public float innerRadius;
+            public float outerRadius;
+            public Matrix4x4 matrix;
+            public float3 position;
+            public Rand rand;
+
+            public void Execute(int i)
+            {
+                float3 pos;
+                float3 tmp;
+                
+                float x;
+                float y;
+                float z;
+                do
+                {
+                    x = rand.NextFloat(-outerRadius, outerRadius);
+                    y = rand.NextFloat(0f, innerRadius / 50f);
+                    z = rand.NextFloat(-outerRadius, outerRadius);
+                    pos = matrix.MultiplyPoint3x4(float3(x, y, z));
+                    
+                    tmp = matrix.MultiplyPoint3x4(float3(x, 0f, z));
+                        
+                    
+                }
+                while (Vector3.Distance(position, tmp) < innerRadius
+                    || Vector3.Distance(position, tmp) > outerRadius);
+
+                scales[i] = rand.NextFloat(0.1f, 0.3f);
+                pos = (pos - position) * remap(0f, 1f, 0.8f, 1.2f, snoise(pos));
+                positions[i] = matrix.MultiplyPoint3x4(pos);
+            }
+        }
+
+        private void GenerateBelt()
+        {
+            int count = Random.Range(1000,2000);
+            float innerRingRadius = this.radius * Mathf.Log10(count) / Random.Range(2f,2.5f);
+            float outerRingRadius = this.radius * Mathf.Log10(count) / Random.Range(1f, 2f);
+            
+            NativeArray<float3> results = new NativeArray<float3>(count, Allocator.Persistent);
+            NativeArray<float> scaleResults = new NativeArray<float>(count, Allocator.Persistent);
+            var job = new BeltGenerator
+            {
+                positions = results,
+                scales = scaleResults,
+                innerRadius = innerRingRadius,
+                outerRadius = outerRingRadius,
+                matrix = this.planet.transform.localToWorldMatrix,
+                position = this.planet.transform.position,
+                rand = new Rand((uint)Random.Range(1, 100000))
+            };
+            job.Schedule(count, default).Complete();
+            this.belt = new Belt[count];
+            for (int i = 0; i < results.Length; i++)
+            {
+                belt[i] = new Belt(this, results[i], scaleResults[i], this.material);
+
+                
+            }
+
+
+            results.Dispose();
+            scaleResults.Dispose();
+
+        }
     }
+
+    public class Belt
+    {
+        GameObject beltObject;
+        Mesh[] lodMeshes;
+
+        public Belt(Planet planet, Vector3 position, float scale, Material material)
+        {
+            this.beltObject = new GameObject(planet.PlanetObject.name + "BeltObj" + GetHashCode());
+            //p.isStatic = true;
+            Mesh m = new Mesh { name = this.beltObject.name };
+            this.beltObject.AddComponent<MeshRenderer>().material = material;
+            this.beltObject.AddComponent<MeshFilter>().mesh = m;
+
+
+
+            Generator.GenerateMesh(m, this.beltObject.transform, ref lodMeshes);
+
+            this.beltObject.transform.position = position;
+            this.beltObject.transform.SetParent(planet.PlanetTransform);
+            this.beltObject.transform.localScale = Vector3.one * scale;
+        }
+
+        public GameObject BeltObject
+        {
+            get { return this.beltObject; }
+        }
+        public Transform BeltTransform
+        {
+            get { return this.beltObject.transform; }
+        }
+    }
+
 
     public class Moon
     {
@@ -312,10 +435,12 @@ namespace GalaxyObject
         Mesh mesh;
         GameObject moon;
         Planet planet;
+        Mesh[] lodMeshes;
 
         public Moon(Planet planet, Material material, float offset, float radius)
         {
             this.moon = new GameObject(planet.PlanetObject.name + "_Moon" + GetHashCode());
+            this.moon.isStatic = true;
             this.mesh = new Mesh { name = this.moon.name };
             this.planet = planet;
 
@@ -326,7 +451,7 @@ namespace GalaxyObject
 
             this.moon.transform.localScale = Vector3.one * radius;
 
-            Generator.GenerateMesh(this.mesh, this.moon.transform);
+            Generator.GenerateMesh(this.mesh, this.moon.transform, ref lodMeshes);
             this.moon.transform.position = new Vector3(offset, 0f, offset);
 
             Transform pl = planet.PlanetObject.transform;
@@ -356,7 +481,7 @@ namespace GalaxyObject
     {
         static MeshJobScheduleDelegate meshJob = MeshJob<CubeSphere, SingleStream>.ScheduleParallel;
 
-        public static void GenerateMesh(Mesh mesh, Transform transform)
+        public static void GenerateMesh(Mesh mesh, Transform transform, ref Mesh[] lodMeshes)
         {
             NoiseLayer[] noiseLayers = new NoiseLayer[4];
 
@@ -447,10 +572,15 @@ namespace GalaxyObject
                 nl4 = noiseLayers[3].active ? noiseLayers[3] : new NoiseLayer()
             };
 
-
-            meshJob(mesh, meshData, ProceduralSettings.Resolution, default, passer).Complete();
-
-            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
+            int resolution = 8;
+            for (int i = 0; i < lodMeshes.Length; i++)
+            {
+                meshJob(mesh, meshData, resolution, default, passer).Complete();
+                lodMeshes[i] = mesh;
+                resolution *= 2;
+            }
+            
+            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, lodMeshes[0]);
 
         }
 
@@ -461,7 +591,7 @@ namespace GalaxyObject
             float offset;
 
             lights = new GameObject[relations.Count];
-
+            
             for (int i = 0; i < relations.Count; i++)
             {
                 var r = relations[i];

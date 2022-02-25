@@ -164,7 +164,6 @@ public class ProceduralMesh : MonoBehaviour
     {
         Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
         Mesh.MeshData meshData = meshDataArray[0];
-
         //NativeArray<NoiseLayer> pass = new NativeArray<NoiseLayer>(noiseLayers, Allocator.Persistent);
         Passer passer = new Passer
         {
