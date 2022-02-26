@@ -73,9 +73,9 @@ public class ProceduralMesh : MonoBehaviour
         {
             options.Add(m.ToString());
         }
-        dropDown.AddOptions(options);
-        dropDown.value = (int)meshType;
-        slider.onValueChanged.AddListener(ChangeResolution);
+        //dropDown.AddOptions(options);
+        //dropDown.value = (int)meshType;
+        //slider.onValueChanged.AddListener(ChangeResolution);
         mesh = new Mesh
         {
             name = "Mesh"

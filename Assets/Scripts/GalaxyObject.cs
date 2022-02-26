@@ -104,8 +104,7 @@ namespace GalaxyObject
         public Star(GameObject starPrefab, Transform parent)
         {
             this.star = GameObject.Instantiate(starPrefab, parent);
-            this.star.isStatic = true;
-            //var lod = this.star.AddComponent<LODGroup>();
+            //this.star.isStatic = true;
 
             //LOD l1 = new LOD(1f,);
             //LOD l2 = new LOD();
@@ -198,9 +197,6 @@ namespace GalaxyObject
     }
     public class Planet
     {
-
-
-        Mesh mesh;
         GameObject planet;
         Moon[] moons;
         Material material;
@@ -210,27 +206,27 @@ namespace GalaxyObject
         SolarSystem solarSystem;
         Mesh[] lodMeshes;
         Belt[] belt;
-        
+        bool gasObject;
         public Planet(SolarSystem solarSystem, Material material, float offset, float radius, Transform parent)
         {
             this.planet = new GameObject("Planet" + GetHashCode());
-            this.planet.isStatic = true;
-            this.mesh = new Mesh { name = this.planet.name};
+            //this.planet.isStatic = true;
             this.material = material;
             this.radius = radius;
             this.offset = offset;
             this.solarSystem = solarSystem;
             this.star = this.solarSystem.Star;
-            
+            this.gasObject = false;
+
             this.planet.AddComponent<MeshRenderer>().material = material;
-            this.planet.AddComponent<MeshFilter>().mesh = this.mesh;
+            this.planet.AddComponent<MeshFilter>();
+
             this.planet.transform.SetParent(parent);
-            
 
             this.planet.transform.localScale = Vector3.one * radius;
 
             this.planet.transform.position = new Vector3(offset, 0f, offset);
-            Generator.GenerateMesh(this.mesh, this.planet.transform, ref lodMeshes);
+            Generator.GenerateMesh(this.planet.transform, ref lodMeshes);
 
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.up, Random.Range(0f,360f));
             this.planet.transform.RotateAround(star.StarTransform.position, star.StarTransform.right, Random.Range(0f,360f));
@@ -246,12 +242,12 @@ namespace GalaxyObject
         public Planet(SolarSystem solarSystem, GameObject gas, Material material, float offset, float radius, Transform parent)
         {
             this.planet = GameObject.Instantiate(gas, parent);
-            this.planet.isStatic = true;
+            //this.planet.isStatic = true;
             this.planet.name = "GasPlanet" + GetHashCode();
             this.material = material;
             this.solarSystem = solarSystem;
             this.star = this.solarSystem.Star;
-
+            this.gasObject = true;
             this.planet.transform.localScale = Vector3.one * radius;
 
             this.planet.transform.position = new Vector3(offset, 0f, offset);
@@ -270,7 +266,29 @@ namespace GalaxyObject
 
         }
 
-      
+
+        public void CheckLOD()
+        {
+            if (!this.gasObject)
+                Generator.CheckLOD(lodMeshes: this.lodMeshes, obj: this.planet, radius: this.Radius);
+            else
+            {
+
+                Generator.CheckLOD(obj: this.planet, gasPlanet: this.planet.GetComponent<ParticleSystem>());
+                foreach (var b in this.belt)
+                {
+                    b.CheckLOD();
+                }
+                
+            }
+
+            foreach(var m in this.moons)
+            {
+                m.CheckLOD();
+            }
+            
+
+        }
 
 
         public GameObject PlanetObject
@@ -293,6 +311,10 @@ namespace GalaxyObject
             get { return this.offset; }
         }
 
+        public bool isGasPlanet
+        {
+            get { return this.gasObject; }
+        }
         public float Radius
         {
             get
@@ -394,6 +416,7 @@ namespace GalaxyObject
             scaleResults.Dispose();
 
         }
+
     }
 
     public class Belt
@@ -405,13 +428,12 @@ namespace GalaxyObject
         {
             this.beltObject = new GameObject(planet.PlanetObject.name + "BeltObj" + GetHashCode());
             //p.isStatic = true;
-            Mesh m = new Mesh { name = this.beltObject.name };
             this.beltObject.AddComponent<MeshRenderer>().material = material;
-            this.beltObject.AddComponent<MeshFilter>().mesh = m;
+            this.beltObject.AddComponent<MeshFilter>();
 
 
 
-            Generator.GenerateMesh(m, this.beltObject.transform, ref lodMeshes);
+            Generator.GenerateMesh(this.beltObject.transform, ref lodMeshes);
 
             this.beltObject.transform.position = position;
             this.beltObject.transform.SetParent(planet.PlanetTransform);
@@ -426,13 +448,19 @@ namespace GalaxyObject
         {
             get { return this.beltObject.transform; }
         }
+        public float Radius
+        {
+            get { return this.beltObject.GetComponent<MeshRenderer>().bounds.size.x / 2f; }
+        }
+
+        public void CheckLOD() => Generator.CheckLOD(this.lodMeshes, this.beltObject, this.Radius);
+
     }
 
 
     public class Moon
     {
 
-        Mesh mesh;
         GameObject moon;
         Planet planet;
         Mesh[] lodMeshes;
@@ -440,18 +468,17 @@ namespace GalaxyObject
         public Moon(Planet planet, Material material, float offset, float radius)
         {
             this.moon = new GameObject(planet.PlanetObject.name + "_Moon" + GetHashCode());
-            this.moon.isStatic = true;
-            this.mesh = new Mesh { name = this.moon.name };
+            //this.moon.isStatic = true;
             this.planet = planet;
 
             moon.AddComponent<MeshRenderer>().material = material;
-            moon.AddComponent<MeshFilter>().mesh = this.mesh;
+            moon.AddComponent<MeshFilter>();
             moon.transform.SetParent(planet.PlanetObject.transform);
 
 
             this.moon.transform.localScale = Vector3.one * radius;
 
-            Generator.GenerateMesh(this.mesh, this.moon.transform, ref lodMeshes);
+            Generator.GenerateMesh(this.moon.transform, ref lodMeshes);
             this.moon.transform.position = new Vector3(offset, 0f, offset);
 
             Transform pl = planet.PlanetObject.transform;
@@ -475,13 +502,16 @@ namespace GalaxyObject
         {
             get { return  this.moon.GetComponent<MeshRenderer>().bounds.size.x / 2f; }
         }
+
+        public void CheckLOD() => Generator.CheckLOD(this.lodMeshes, this.moon, this.Radius);
+
     }
 
     public static class Generator
     {
         static MeshJobScheduleDelegate meshJob = MeshJob<CubeSphere, SingleStream>.ScheduleParallel;
 
-        public static void GenerateMesh(Mesh mesh, Transform transform, ref Mesh[] lodMeshes)
+        public static void GenerateMesh(Transform transform, ref Mesh[] lodMeshes)
         {
             NoiseLayer[] noiseLayers = new NoiseLayer[4];
 
@@ -561,8 +591,6 @@ namespace GalaxyObject
                 }
             };
 
-            Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
-            Mesh.MeshData meshData = meshDataArray[0];
 
             Passer passer = new Passer
             {
@@ -572,15 +600,26 @@ namespace GalaxyObject
                 nl4 = noiseLayers[3].active ? noiseLayers[3] : new NoiseLayer()
             };
 
-            int resolution = 8;
+            int resolution = 2;
+            lodMeshes = new Mesh[5];
+
             for (int i = 0; i < lodMeshes.Length; i++)
             {
-                meshJob(mesh, meshData, resolution, default, passer).Complete();
-                lodMeshes[i] = mesh;
+                Mesh.MeshDataArray meshDataArray = Mesh.AllocateWritableMeshData(1);
+                Mesh.MeshData meshData = meshDataArray[0];
+                Mesh m = new Mesh { name = transform.gameObject.name + "_LOD" + i };
+                meshJob(m, meshData, resolution, default, passer).Complete();
+                lodMeshes[i] = m;
                 resolution *= 2;
+                Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, lodMeshes[i]);
             }
-            
-            Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, lodMeshes[0]);
+
+            //foreach (var m in lodMeshes)
+            //{
+            //    Debug.Log(m);
+            //    Debug.Log(m.vertexCount);
+            //}
+            transform.GetComponent<MeshFilter>().mesh = lodMeshes[0];
 
         }
 
@@ -622,11 +661,77 @@ namespace GalaxyObject
                 l.innerSpotAngle = (r.radius) * Mathf.Deg2Rad * 180f;
                    
             }
-
-           
-
         }
+        
+        
+        public static void CheckLOD(Mesh[] lodMeshes = null, GameObject obj = null, float radius = 0f, ParticleSystem gasPlanet = null)
+        {
+            Vector3 camForward = Camera.main.transform.forward;
+            Vector3 objToCamera = obj.transform.position - Camera.main.transform.position;
+            float dot = Vector3.Dot(camForward, objToCamera);
+            float dotOverMag = dot / (camForward.magnitude * objToCamera.magnitude);
 
+            float visible = Mathf.Cos(Mathf.Deg2Rad * 90f);
+            float distance = Vector3.Distance(Camera.main.transform.position, obj.transform.position);
+            //Debug.Log(Camera.main.transform.position);
+            //Debug.Log(obj.transform.position);
+            if (lodMeshes == null && gasPlanet != null)
+            {
+                Debug.Log(distance);
+                var renderer = gasPlanet.GetComponent<ParticleSystemRenderer>();
+                if (dotOverMag > visible)
+                {
+                    if (distance > 1000f)
+                        renderer.enabled = false;
+
+                    else
+                        renderer.enabled = true;
+                }
+                else
+                    renderer.enabled = false;
+
+                return;
+            }
+            if (obj.GetComponent<Renderer>().isVisible && dotOverMag > visible)
+            {
+
+              
+                if (distance > 1000f)
+                {
+                    obj.GetComponent<MeshFilter>().mesh = null;
+                }
+                else if (distance > 600f && distance <= 1000f)
+                {
+                    obj.SetActive(true);
+                    obj.GetComponent<MeshFilter>().mesh = lodMeshes[0];
+                }
+                else if (distance > 400f && distance <= 600f)
+                {
+                    obj.SetActive(true);
+                    obj.GetComponent<MeshFilter>().mesh = lodMeshes[1];
+                }
+                else if (distance > 200f && distance <= 400f)
+                {
+                    obj.SetActive(true);
+                    obj.GetComponent<MeshFilter>().mesh = lodMeshes[2];
+                }
+                else if (distance > 100f && distance <= 200f)
+                {
+                    obj.SetActive(true);
+                    obj.GetComponent<MeshFilter>().mesh = lodMeshes[3];
+                }
+                else if (distance <= 100f)
+                {
+                    obj.SetActive(true);
+                    obj.GetComponent<MeshFilter>().mesh = lodMeshes[4];
+                }
+
+            }
+            else
+            {
+                obj.GetComponent<MeshFilter>().mesh = null;
+            }
+        }
 
         
     }

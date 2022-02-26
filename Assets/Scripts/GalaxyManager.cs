@@ -10,11 +10,11 @@ public class GalaxyManager : MonoBehaviour
     private Material planetMaterial;
     [SerializeField]
     private GameObject starPrefab;
-
+    SolarSystem ss;
     // Start is called before the first frame update
     void Start()
     {
-        SolarSystem ss = new SolarSystem(this.transform, planetMaterial, starPrefab);            
+        ss = new SolarSystem(this.transform, planetMaterial, starPrefab);            
         foreach(var p in ss.Planets)
         {
             FindObjectOfType<Text>().text += p.PlanetObject.name + "\n";
@@ -24,6 +24,10 @@ public class GalaxyManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        foreach (var p in ss.Planets)
+        {
+            p.CheckLOD();
+            
+        }
     }
 }
