@@ -5655,6 +5655,14 @@ PrefabInstance:
       propertyPath: LightsModule.light
       value: 
       objectReference: {fileID: 2059348996}
+    - target: {fileID: 1533875261873547428, guid: f8874f5e7c081bc4eb6d484995a98e4a, type: 3}
+      propertyPath: NoiseModule.quality
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1533875261873547428, guid: f8874f5e7c081bc4eb6d484995a98e4a, type: 3}
+      propertyPath: NoiseModule.remapEnabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1533875261873547431, guid: f8874f5e7c081bc4eb6d484995a98e4a, type: 3}
       propertyPath: m_RootOrder
       value: 1

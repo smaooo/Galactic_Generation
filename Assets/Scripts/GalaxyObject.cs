@@ -73,16 +73,43 @@ namespace GalaxyObject
                         planet = p
                     });
                 }
+                if (p.isGasPlanet)
+                {
+                    for (int j = 0; j < this.planets[i].Belt.Length; j++)
+                    {
+                        var b = p.Belt[j];
+                        relations.Add(new Relations
+                        {
+                            id = j,
+                            type = "BELT",
+                            radius = b.Radius,
+                            transform = b.BeltTransform,
+                            planet = p
+                        });
+                    }
+
+                }
             }
 
             Generator.GenerateLights(ref this.lights, this, relations);
 
-            //StaticOcclusionCulling.Compute();
-
-
+            
         }
 
+        public void CheckLOD()
+        {
+            Generator.CheckLOD(obj: this.star.StarObject, gasPlanet: this.star.ParticleRenderer, radius: this.Radius);
+            foreach (var p in this.planets)
+            {
+                p.CheckLOD();
+            }
+        }
 
+        public float Radius
+        {
+            get
+            { return this.star.ParticleRenderer.bounds.size.x / 2f; }
+        }
         public Planet[] Planets
         {
             get { return this.planets; }
@@ -106,11 +133,6 @@ namespace GalaxyObject
             this.star = GameObject.Instantiate(starPrefab, parent);
             //this.star.isStatic = true;
 
-            //LOD l1 = new LOD(1f,);
-            //LOD l2 = new LOD();
-            //LOD l3 = new LOD();
-
-            //lod.SetLODs(new LOD[] { l1, l2, l3 });
             SetupStar();
         }
 
@@ -192,7 +214,10 @@ namespace GalaxyObject
             get { return this.star.transform; }
         }
 
-      
+        public ParticleSystemRenderer ParticleRenderer
+        {
+            get { return this.star.GetComponent<ParticleSystemRenderer>(); }
+        }
         
     }
     public class Planet
@@ -207,6 +232,7 @@ namespace GalaxyObject
         Mesh[] lodMeshes;
         Belt[] belt;
         bool gasObject;
+
         public Planet(SolarSystem solarSystem, Material material, float offset, float radius, Transform parent)
         {
             this.planet = new GameObject("Planet" + GetHashCode());
@@ -267,6 +293,11 @@ namespace GalaxyObject
         }
 
 
+        private void SetupGasPlanet()
+        {
+
+        }
+
         public void CheckLOD()
         {
             if (!this.gasObject)
@@ -274,7 +305,7 @@ namespace GalaxyObject
             else
             {
 
-                Generator.CheckLOD(obj: this.planet, gasPlanet: this.planet.GetComponent<ParticleSystem>());
+                Generator.CheckLOD(obj: this.planet, gasPlanet: this.planet.GetComponent<ParticleSystemRenderer>(), radius: this.Radius);
                 foreach (var b in this.belt)
                 {
                     b.CheckLOD();
@@ -331,6 +362,11 @@ namespace GalaxyObject
                 }
                 return r;
             }
+        }
+
+        public Belt[] Belt
+        {
+            get { return this.belt; }
         }
         private void GenerateMoons()
         {
@@ -614,11 +650,7 @@ namespace GalaxyObject
                 Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, lodMeshes[i]);
             }
 
-            //foreach (var m in lodMeshes)
-            //{
-            //    Debug.Log(m);
-            //    Debug.Log(m.vertexCount);
-            //}
+      
             transform.GetComponent<MeshFilter>().mesh = lodMeshes[0];
 
         }
@@ -641,6 +673,7 @@ namespace GalaxyObject
                     range = 0.008f;
                     intensity = 10000f;
                 }
+                
                 else
                 {
                     offset = 0.99f;
@@ -659,70 +692,76 @@ namespace GalaxyObject
                 l.range = distance.magnitude * range;
                 l.intensity = intensity;
                 l.innerSpotAngle = (r.radius) * Mathf.Deg2Rad * 180f;
+
+                
                    
             }
         }
         
         
-        public static void CheckLOD(Mesh[] lodMeshes = null, GameObject obj = null, float radius = 0f, ParticleSystem gasPlanet = null)
+        public static void CheckLOD(Mesh[] lodMeshes = null, GameObject obj = null, float radius = 0f, ParticleSystemRenderer gasPlanet = null)
         {
             Vector3 camForward = Camera.main.transform.forward;
             Vector3 objToCamera = obj.transform.position - Camera.main.transform.position;
             float dot = Vector3.Dot(camForward, objToCamera);
             float dotOverMag = dot / (camForward.magnitude * objToCamera.magnitude);
 
-            float visible = Mathf.Cos(Mathf.Deg2Rad * 90f);
+            float visible = Mathf.Cos(Mathf.Deg2Rad * 60f);
             float distance = Vector3.Distance(Camera.main.transform.position, obj.transform.position);
-            //Debug.Log(Camera.main.transform.position);
-            //Debug.Log(obj.transform.position);
+            
             if (lodMeshes == null && gasPlanet != null)
             {
-                Debug.Log(distance);
-                var renderer = gasPlanet.GetComponent<ParticleSystemRenderer>();
+                
                 if (dotOverMag > visible)
                 {
-                    if (distance > 1000f)
-                        renderer.enabled = false;
+                    if (distance > 100 * radius)
+                        gasPlanet.enabled = false;
 
                     else
-                        renderer.enabled = true;
+                        gasPlanet.enabled = true;
                 }
                 else
-                    renderer.enabled = false;
+                    gasPlanet.enabled = false;
 
                 return;
             }
-            if (obj.GetComponent<Renderer>().isVisible && dotOverMag > visible)
+            if (dotOverMag > visible)
             {
 
               
                 if (distance > 1000f)
                 {
                     obj.GetComponent<MeshFilter>().mesh = null;
+                    obj.GetComponent<MeshRenderer>().enabled = false;
                 }
                 else if (distance > 600f && distance <= 1000f)
                 {
                     obj.SetActive(true);
+                    obj.GetComponent<MeshRenderer>().enabled = true;
                     obj.GetComponent<MeshFilter>().mesh = lodMeshes[0];
                 }
                 else if (distance > 400f && distance <= 600f)
                 {
                     obj.SetActive(true);
+                    obj.GetComponent<MeshRenderer>().enabled = true;
                     obj.GetComponent<MeshFilter>().mesh = lodMeshes[1];
                 }
                 else if (distance > 200f && distance <= 400f)
                 {
                     obj.SetActive(true);
+                    obj.GetComponent<MeshRenderer>().enabled = true;
                     obj.GetComponent<MeshFilter>().mesh = lodMeshes[2];
                 }
                 else if (distance > 100f && distance <= 200f)
                 {
                     obj.SetActive(true);
+                    obj.GetComponent<MeshRenderer>().enabled = true;
                     obj.GetComponent<MeshFilter>().mesh = lodMeshes[3];
                 }
                 else if (distance <= 100f)
                 {
                     obj.SetActive(true);
+                    obj.GetComponent<MeshRenderer>().enabled = true;
                     obj.GetComponent<MeshFilter>().mesh = lodMeshes[4];
                 }
 
@@ -730,6 +769,7 @@ namespace GalaxyObject
             else
             {
                 obj.GetComponent<MeshFilter>().mesh = null;
+                obj.GetComponent<MeshRenderer>().enabled = false;
             }
         }
 

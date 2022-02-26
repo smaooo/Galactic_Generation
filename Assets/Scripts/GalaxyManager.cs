@@ -24,10 +24,6 @@ public class GalaxyManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        foreach (var p in ss.Planets)
-        {
-            p.CheckLOD();
-            
-        }
+        ss.CheckLOD();
     }
 }
