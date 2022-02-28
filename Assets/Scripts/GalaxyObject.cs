@@ -21,7 +21,8 @@ using Unity.Entities;
 namespace GalaxyObject
 {
 
-    public interface IGObejct 
+    public enum GType { STAR, PLANET, GASPLANET, BELT, MOON}
+    public interface IGObject 
     {
         
         public float Radius { get;}
@@ -47,13 +48,22 @@ namespace GalaxyObject
 
         public ParticleSystem Particle { get; }
         public Mesh Mesh { get; set; }
+
+        public dynamic Parent { get; set; }
+
+        
+        public void Instantiate(bool destroy = false, int lodIndex = 0);
     }
+
+
+
 
     public class SolarSystem
     {
         Planet[] planets;
         Star star;
         GameObject[] lights;
+        Transform transform;
 
         public struct Relations
         {
@@ -67,6 +77,7 @@ namespace GalaxyObject
 
         public SolarSystem(Transform parent, Material planetMaterial, GameObject gas)
         {
+            this.transform = parent; 
             this.star = new Star(gas, parent);
             
             this.planets = new Planet[Random.Range(1, 10)];
@@ -76,8 +87,8 @@ namespace GalaxyObject
             {
                 distance += Random.Range(10000f, 10000f);
 
-                this.planets[i] = Random.Range(0f, 1f) <= 0.3f && i > 2 ? new Planet(this, gas, planetMaterial, distance, Random.Range(0.5f, 5f), parent)
-                    : new Planet(this, planetMaterial, distance, Random.Range(5f, 40f), parent);
+                this.planets[i] = Random.Range(0f, 1f) <= 0.3f && i > 2 ? new Planet(this, gas, planetMaterial, distance, Random.Range(0.5f, 5f))
+                    : new Planet(this, planetMaterial, distance, Random.Range(5f, 40f));
 
             }
 
@@ -155,14 +166,21 @@ namespace GalaxyObject
         {
             get { return this.star; }
         }
-      
+
+        public Transform Transform
+        {
+            get { return this.transform; }
+        }
+
+        
     }
 
 
-    public class Star : IGObejct
+    public class Star : IGObject
     {
         GameObject star;
         Color initColor;
+        SolarSystem parent;
 
         public Star(GameObject starPrefab, Transform parent)
         {
@@ -215,46 +233,58 @@ namespace GalaxyObject
         {
             get { return this.star.GetComponent<ParticleSystem>(); }
         }
+
+        public dynamic Parent
+        {
+            get { return this.parent; }
+            set { this.parent = value; }
+        }
         public void CheckLOD() => Generator.CheckLOD(this);
+        
+        public void Instantiate (bool destroy, int index)
+        {
+
+        }
     }
-    public class Planet : IGObejct
+
+
+    public class Planet : IGObject
     {
         GameObject planet;
         Moon[] moons;
         Material material;
         float radius;
         float offset;
-        Star star;
-        SolarSystem solarSystem;
+        SolarSystem parent;
         Mesh[] lodMeshes;
         Belt[] belt;
         bool gasObject;
         Color initColor;
+        string name;
 
-        public Planet(SolarSystem solarSystem, Material material, float offset, float radius, Transform parent)
+        public Planet(SolarSystem parent, Material material, float offset, float radius)
         {
-            this.planet = new GameObject("Planet" + GetHashCode());
-            //this.planet.isStatic = true;
+            this.name = "Planet" + GetHashCode();
+            this.planet = new GameObject(this.name);
             this.material = material;
             this.radius = radius;
             this.offset = offset;
-            this.solarSystem = solarSystem;
-            this.star = this.solarSystem.Star;
+            this.parent = parent;
             this.gasObject = false;
 
             this.planet.AddComponent<MeshRenderer>().material = material;
             this.planet.AddComponent<MeshFilter>();
 
-            this.planet.transform.SetParent(parent);
+            this.planet.transform.SetParent(this.parent.Transform);
 
             this.planet.transform.localScale = Vector3.one * radius;
 
             this.planet.transform.position = new Vector3(offset, 0f, offset);
             Generator.GenerateMesh(this.planet.transform.position, ref lodMeshes, this.planet.name);
             this.planet.GetComponent<MeshFilter>().mesh = this.lodMeshes[0];
-            this.planet.transform.RotateAround(star.Position, star.Transform.up, Random.Range(0f,360f));
-            this.planet.transform.RotateAround(star.Position, star.Transform.right, Random.Range(0f,360f));
-            this.planet.transform.RotateAround(star.Position, star.Transform.forward, Random.Range(0f,360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.up, Random.Range(0f,360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.right, Random.Range(0f,360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.forward, Random.Range(0f,360f));
 
             int numberOfMoons = radius > 1 ? (int)(Random.Range(5, 10)) : (int)(Random.Range(0, 5) * radius);
 
@@ -263,22 +293,22 @@ namespace GalaxyObject
             
         }
 
-        public Planet(SolarSystem solarSystem, GameObject gas, Material material, float offset, float radius, Transform parent)
+        public Planet(SolarSystem parent, GameObject gas, Material material, float offset, float radius)
         {
-            this.planet = GameObject.Instantiate(gas, parent);
-            //this.planet.isStatic = true;
-            this.planet.name = "GasPlanet" + GetHashCode();
+            this.parent = parent;
+            this.name = "GasPlanet" + GetHashCode();
+            this.planet = GameObject.Instantiate(gas, this.parent.Transform);
+            this.planet.name = this.name;
             this.material = material;
-            this.solarSystem = solarSystem;
-            this.star = this.solarSystem.Star;
+
             this.gasObject = true;
             this.planet.transform.localScale = Vector3.one * radius;
 
             this.planet.transform.position = new Vector3(offset, 0f, offset);
 
-            this.planet.transform.RotateAround(star.Position, star.Transform.up, Random.Range(0f, 360f));
-            this.planet.transform.RotateAround(star.Position, star.Transform.right, Random.Range(0f, 360f));
-            this.planet.transform.RotateAround(star.Position, star.Transform.forward, Random.Range(0f, 360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.up, Random.Range(0f, 360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.right, Random.Range(0f, 360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.forward, Random.Range(0f, 360f));
             this.radius = this.planet.GetComponent<ParticleSystemRenderer>().bounds.size.x / 2;
             int numberOfMoons = (int)(Random.Range(5, 10));
 
@@ -293,7 +323,11 @@ namespace GalaxyObject
         }
 
 
-        
+
+        public void Instantiate(bool destroy = false, int lodIndex = 0)
+        {
+            
+        }
 
         public void CheckLOD()
         {
@@ -419,6 +453,13 @@ namespace GalaxyObject
         {
             get { return this.belt; }
         }
+
+        public dynamic Parent
+        {
+            get { return this.parent; }
+            set { this.parent = value; }
+        }
+
         private void GenerateMoons()
         {
             for (int i = 0; i < moons.Length; i++)
@@ -498,20 +539,10 @@ namespace GalaxyObject
             };
             job.Schedule(count, 4, default).Complete();
             this.belt = new Belt[count];
-            var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-            var archeType = entityManager.CreateArchetype(
-                    typeof(Translation),
-                    typeof(Rotation),
-                    typeof(Scale),
-                    typeof(MeshRenderer),
-                    typeof(RenderBounds),
-                    typeof(LocalToWorld)
-                    );
-
-            var entity = entityManager.CreateEntity(archeType);
+            
             for (int i = 0; i < results.Length; i++)
             {
-                belt[i] = new Belt(this, results[i], scaleResults[i], this.material, entity, entityManager);
+                belt[i] = new Belt(this, results[i], scaleResults[i], this.material);
 
                 
             }
@@ -525,40 +556,41 @@ namespace GalaxyObject
 
     }
 
-    public class Belt : IGObejct
+    public class Belt : IGObject
     {
         GameObject beltObject;
         Mesh[] lodMeshes;
-        Entity entity;
-        EntityManager entityManager;
         string name;
         Material material;
-        public Belt(Planet planet, Vector3 position, float scale, Material material, Entity entity, EntityManager entityManager)
-        {
-            //this.beltObject = new GameObject(planet.PlanetObject.name + "BeltObj" + GetHashCode());
-            ////p.isStatic = true;
-            //this.beltObject.AddComponent<MeshRenderer>().material = material;
-            //this.beltObject.AddComponent<MeshFilter>();
-            this.material = material;
-            this.name = planet.Object.name + "_BeltObj" + GetHashCode();
-            this.entity = entityManager.Instantiate(entity);
-            entityManager.AddComponentData(this.entity, new Translation
-            {
-                Value = position
-            });
-            entityManager.AddComponentData(this.entity, new Scale
-            {
-                Value = scale
-            });
+        Planet parent;
 
-            this.entityManager = entityManager;
-            Generator.GenerateMesh(position, ref lodMeshes, name);
-            entityManager.AddSharedComponentData(this.entity, new RenderMesh { 
-                mesh = this.lodMeshes[0],
-                material = material});
-            //this.beltObject.transform.position = position;
-            //this.beltObject.transform.SetParent(planet.PlanetTransform);
-            //this.beltObject.transform.localScale = Vector3.one * scale;
+        public Belt(Planet parent, Vector3 position, float scale, Material material)
+        {
+            this.parent = parent;
+            this.name = this.parent.Name + "_BeltObj" + GetHashCode();
+            this.beltObject = new GameObject(this.name);
+            this.beltObject.AddComponent<MeshRenderer>().material = material;
+            this.beltObject.AddComponent<MeshFilter>();
+            this.material = material;
+            //this.entity = entityManager.Instantiate(entity);
+            //entityManager.AddComponentData(this.entity, new Translation
+            //{
+            //    Value = position
+            //});
+            //entityManager.AddComponentData(this.entity, new Scale
+            //{
+            //    Value = scale
+            //});
+
+            //this.entityManager = entityManager;
+            //Generator.GenerateMesh(position, ref lodMeshes, name);
+            //entityManager.AddSharedComponentData(this.entity, new RenderMesh { 
+            //    mesh = this.lodMeshes[0],
+            //    material = material});
+
+            this.beltObject.transform.position = position;
+            this.beltObject.transform.SetParent(this.parent.Transform);
+            this.beltObject.transform.localScale = Vector3.one * scale;
 
 
         }
@@ -567,15 +599,11 @@ namespace GalaxyObject
         {
             get
             {
-                return this.entityManager.GetSharedComponentData<RenderMesh>(this.entity).mesh;
+                return this.beltObject.GetComponent<MeshFilter>().mesh;
             }
             set
             {
-                this.entityManager.SetSharedComponentData(this.entity, new RenderMesh
-                {
-                    mesh = value,
-                    material = this.material
-                });
+                this.beltObject.GetComponent<MeshFilter>().mesh = value;
             }
         }
 
@@ -586,15 +614,18 @@ namespace GalaxyObject
         }
 
         public bool isGas { get { return false; } }
-        public Transform Transform { get; }
+        public Transform Transform
+        {
+            get { return this.beltObject.transform; }
+        }
         
         public Vector3 Position
         {
-            get { return this.entityManager.GetComponentData<Translation>(this.entity).Value; }
+            get { return this.Transform.position; }
         }
         public float Radius
         {
-            get { return this.entityManager.GetSharedComponentData<RenderMesh>(this.entity).mesh.bounds.size.x / 2f; }
+            get { return this.beltObject.GetComponent<MeshRenderer>().bounds.size.x / 2f; }
         }
 
         public ParticleSystemRenderer ParticleRenderer { get; }
@@ -606,7 +637,11 @@ namespace GalaxyObject
 
         public Color GasColor { get; set; }
 
-       
+        public dynamic Parent
+        {
+            get { return this.parent; }
+            set { this.parent = value; }
+        }
 
         public float Offset { get; }
 
@@ -614,30 +649,36 @@ namespace GalaxyObject
 
         public Mesh[] LODMeshes
         {
-            get { return this.lodMeshes; }
+            get { return null; }
         }
         public void CheckLOD() => Generator.CheckLOD(this);
 
+        public void Instantiate (bool destroy, int index)
+        {
+
+        }
     }
 
 
-    public class Moon : IGObejct
+    public class Moon : IGObject
     {
 
         GameObject moon;
-        Planet planet;
+        Planet parent;
         Mesh[] lodMeshes;
         float offset;
-
-        public Moon(Planet planet, Material material, float offset, float radius)
+        string name;
+        
+        public Moon(Planet parent, Material material, float offset, float radius)
         {
-            this.moon = new GameObject(planet.Object.name + "_Moon" + GetHashCode());
-            this.planet = planet;
+            this.parent = parent;
+            this.name = this.parent.Name + "_Moon" + GetHashCode();
+            this.moon = new GameObject(this.name);
             this.offset = offset;
 
             moon.AddComponent<MeshRenderer>().material = material;
             moon.AddComponent<MeshFilter>();
-            moon.transform.SetParent(planet.Object.transform);
+            moon.transform.SetParent(this.parent.Transform);
 
 
             this.moon.transform.localScale = Vector3.one * radius;
@@ -646,11 +687,11 @@ namespace GalaxyObject
             this.moon.GetComponent<MeshFilter>().mesh = this.lodMeshes[0];
             this.moon.transform.position = new Vector3(offset, 0f, offset);
 
-            Transform pl = planet.Object.transform;
+            
 
-            this.moon.transform.RotateAround(pl.position, pl.up, Random.Range(0f, 360f));
-            this.moon.transform.RotateAround(pl.position, pl.right, Random.Range(0f, 360f));
-            this.moon.transform.RotateAround(pl.position, pl.forward, Random.Range(0f, 360f));
+            this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.up, Random.Range(0f, 360f));
+            this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.right, Random.Range(0f, 360f));
+            this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.forward, Random.Range(0f, 360f));
         }
 
         public GameObject Object
@@ -679,7 +720,11 @@ namespace GalaxyObject
 
         public Color GasColor { get; set; }
 
-
+        public dynamic Parent
+        {
+            get { return this.parent; }
+            set { this.parent = value; }
+        }
 
         public Vector3 Position
         {
@@ -710,6 +755,10 @@ namespace GalaxyObject
         }
         public void CheckLOD() => Generator.CheckLOD(this);
 
+        public void Instantiate(bool destroy, int index)
+        {
+
+        }
     }
 
 
@@ -872,7 +921,7 @@ namespace GalaxyObject
         }
         
         
-        public static void CheckLOD<T> (T obj) where T : IGObejct
+        public static void CheckLOD<T> (T obj) where T : IGObject
         {
             Vector3 camForward = Camera.main.transform.forward;
             Vector3 objToCamera = obj.Position - Camera.main.transform.position;
@@ -909,10 +958,11 @@ namespace GalaxyObject
                     {
                         mr.enabled = false;
                     }
+                    if (obj.Object != null) obj.Object.SetActive(false);
                 }
                 else if (distance > 600f && distance <= 1000f)
                 {
-                    //obj.Object.SetActive(true);
+                    if (obj.Object != null) obj.Object.SetActive(true);
                     if (obj.Object.TryGetComponent<MeshRenderer>(out var mr))
                     {
                         mr.enabled = true;
@@ -921,7 +971,7 @@ namespace GalaxyObject
                 }
                 else if (distance > 400f && distance <= 600f)
                 {
-                    //obj.SetActive(true);
+                    if (obj.Object != null) obj.Object.SetActive(true);
                     if (obj.Object.TryGetComponent<MeshRenderer>(out var mr))
                     {
                         mr.enabled = true;
@@ -930,7 +980,7 @@ namespace GalaxyObject
                 }
                 else if (distance > 200f && distance <= 400f)
                 {
-                    //obj.SetActive(true);
+                    if (obj.Object != null) obj.Object.SetActive(true);
                     if (obj.Object.TryGetComponent<MeshRenderer>(out var mr))
                     {
                         mr.enabled = true;
@@ -939,7 +989,7 @@ namespace GalaxyObject
                 }
                 else if (distance > 100f && distance <= 200f)
                 {
-                    //obj.SetActive(true);
+                    if (obj.Object != null) obj.Object.SetActive(true);
                     if (obj.Object.TryGetComponent<MeshRenderer>(out var mr))
                     {
                         mr.enabled = true;
@@ -948,7 +998,7 @@ namespace GalaxyObject
                 }
                 else if (distance <= 100f)
                 {
-                    //obj.SetActive(true);
+                    if (obj.Object != null) obj.Object.SetActive(true);
                     if (obj.Object.TryGetComponent<MeshRenderer>(out var mr))
                     {
                         mr.enabled = true;
@@ -964,11 +1014,12 @@ namespace GalaxyObject
                 {
                     mr.enabled = false;
                 }
+                if (obj.Object != null) obj.Object.SetActive(false);
             }
 
         }
 
-        public static void SetupGas<T>(T obj) where T : IGObejct
+        public static void SetupGas<T>(T obj) where T : IGObject
         {
             var main = obj.Particle.main;
 
