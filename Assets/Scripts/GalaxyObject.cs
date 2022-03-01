@@ -13,23 +13,98 @@ using Unity.Jobs;
 using Unity.Burst;
 using Unity.Collections;
 using UnityEngine.Jobs;
-using System;
-using Unity.Transforms;
-using Unity.Rendering;
-using Unity.Entities;
+
 
 namespace GalaxyObject
 {
+    public struct GData
+    {
+        public string name;
+        public Vector3 position;
+        public Vector3 scale;
+        public Material material;
+        public GLight light;
+        public GParticle particle;
+        
+        public void Instantiate<T>(T obj) where T : IGObject
+        {
+            GameObject g;
+            if (obj.isGas)
+            {
+                g = this.particle.Instantiate();
+            }
+            else
+            {
+                g = new GameObject();
+                g.AddComponent<MeshFilter>().mesh = obj.LODMeshes[0];
+                g.AddComponent<MeshRenderer>().material = obj.ObjectData.material;
 
-    public enum GType { STAR, PLANET, GASPLANET, BELT, MOON}
+                this.light.Instantiate(obj);
+            }
+
+            g.name = this.name;
+            g.transform.position = this.position;
+            g.transform.localScale = this.scale;
+
+            obj.Object = g;
+        }
+
+    }
+
+    public struct GLight
+    {
+        public string name;
+        public Vector3 postion;
+        public float intensity;
+        public float range;
+        public float innerSpotAngle;
+        public float outerSpotAngle;
+
+        public void Instantiate<T>(T obj) where T : IGObject
+        {
+            var gl = new GameObject(name: this.name);
+            gl.transform.position = this.postion;
+            var l = gl.AddComponent<Light>();
+            l.type = LightType.Spot;
+            l.intensity = this.intensity;
+            l.range = this.range;
+            l.innerSpotAngle = this.innerSpotAngle;
+            l.spotAngle = this.outerSpotAngle;
+
+            obj.Light = gl;
+
+        }
+
+    }
+
+    public struct GParticle
+    {
+        public string name;
+        public GameObject prefab;
+        public Color initColor;
+       
+        public GameObject Instantiate()
+        {
+            var obj = GameObject.Instantiate(this.prefab);
+            
+            var main = obj.GetComponent<ParticleSystem>().main;
+            main.startColor = this.initColor;
+
+            obj.GetComponent<ParticleSystemRenderer>().material.SetVector("_EmissionColor", new Vector4(
+                this.initColor.r, this.initColor.g, this.initColor.b, 4f));
+            obj.GetComponent<ParticleSystemRenderer>().material.SetColor("_BaseColor", this.initColor);
+
+            return obj;
+        }
+    }
+
     public interface IGObject 
     {
         
         public float Radius { get;}
 
-        public Color GasColor { get; set; }
 
-        public GameObject Object { get; }
+        public GameObject Object { get; set; }
         
         public Transform Transform { get; }
         
@@ -38,8 +113,7 @@ namespace GalaxyObject
         public float Offset { get; }
 
    
-        public string Name { get; }
-
+        
         public Mesh[] LODMeshes { get; }
         
         public bool isGas { get; }
@@ -49,21 +123,27 @@ namespace GalaxyObject
         public ParticleSystem Particle { get; }
         public Mesh Mesh { get; set; }
 
-        public dynamic Parent { get; set; }
+        public GData ObjectData { get; set; }
 
+        public GData ParentData { get; set; }
+
+
+        public GameObject Light { get; set; }
         
-        public void Instantiate(bool destroy = false, int lodIndex = 0);
+        //public void Instantiate(bool destroy = false, int lodIndex = 0);
     }
 
 
 
 
-    public class SolarSystem
+    public class SolarSystem: IGObject
     {
         Planet[] planets;
         Star star;
         GameObject[] lights;
         Transform transform;
+        GData data;
+        GData parentData;
 
         public struct Relations
         {
@@ -78,7 +158,15 @@ namespace GalaxyObject
         public SolarSystem(Transform parent, Material planetMaterial, GameObject gas)
         {
             this.transform = parent; 
-            this.star = new Star(gas, parent);
+            this.star = new Star(this, gas, parent);
+
+
+            this.data = new GData
+            {
+                name = "System" + GetHashCode(),
+                position = this.transform.position,
+                scale = this.transform.lossyScale
+            };
             
             this.planets = new Planet[Random.Range(1, 10)];
             float distance = 0f;
@@ -91,55 +179,6 @@ namespace GalaxyObject
                     : new Planet(this, planetMaterial, distance, Random.Range(5f, 40f));
 
             }
-
-
-
-            List<Relations> relations = new List<Relations>();
-            for (int i = 0; i < this.planets.Length; i++)
-            {
-                var p = this.planets[i];
-                relations.Add(new Relations
-                {
-                    id = i,
-                    type = "PLANET",
-                    name = p.Name,
-                    radius = p.Radius,
-                    position = p.Position
-                });
-                for (int j = 0; j < this.planets[i].Moons.Length; j++)
-                {
-                    var m = p.Moons[j];
-                    relations.Add(new Relations
-                    {
-                        id = j,
-                        type = "MOON",
-                        name = m.Name,
-                        radius = m.Radius,
-                        position = m.Position,
-                        planet = p
-                    });
-                }
-                if (p.isGas)
-                {
-                    for (int j = 0; j < this.planets[i].Belt.Length; j++)
-                    {
-                        var b = p.Belt[j];
-                        relations.Add(new Relations
-                        {
-                            id = j,
-                            type = "BELT",
-                            name = b.Name,
-                            radius = b.Radius,
-                            position = b.Position,
-                            planet = p
-                        });
-                    }
-
-                }
-            }
-
-            Generator.GenerateLights(ref this.lights, this, relations);
-
             
         }
 
@@ -152,11 +191,7 @@ namespace GalaxyObject
             }
         }
 
-        public float Radius
-        {
-            get
-            { return this.star.ParticleRenderer.bounds.size.x / 2f; }
-        }
+       
         public Planet[] Planets
         {
             get { return this.planets; }
@@ -172,22 +207,62 @@ namespace GalaxyObject
             get { return this.transform; }
         }
 
-        
+        public float Radius { get; }
+
+
+        public GameObject Object { get; set; }
+
+        public Vector3 Position { get; }
+
+        public float Offset { get; }
+
+        public Mesh[] LODMeshes { get; }
+
+        public bool isGas { get; }
+
+        public ParticleSystemRenderer ParticleRenderer { get; }
+
+        public ParticleSystem Particle { get; }
+        public Mesh Mesh { get; set; }
+
+        public GData ObjectData 
+        {   get { return this.data; }
+            set { this.data = value; }
+        }
+
+        public GData ParentData { get; set; }
+
+        public GameObject Light { get; set; }
     }
 
 
     public class Star : IGObject
     {
         GameObject star;
-        Color initColor;
         SolarSystem parent;
-
-        public Star(GameObject starPrefab, Transform parent)
+        GData data;
+        GData parentData;
+        
+        public Star(SolarSystem sParent, GameObject starPrefab, Transform parent)
         {
+            this.parent = sParent;
             this.star = GameObject.Instantiate(starPrefab, parent);
-            //this.star.isStatic = true;
+
+
+
+            parentData = this.parent.ObjectData;
+
+            data = new GData
+            {
+                name = sParent.ObjectData.name + "_Star" + GetHashCode(),
+                position = this.star.transform.position,
+                scale = this.star.transform.lossyScale,
+                
+            };
 
             Generator.SetupGas(this);
+
+            GameObject.Destroy(this.star);
         }
 
 
@@ -200,9 +275,6 @@ namespace GalaxyObject
 
         public float Offset { get; }
 
-
-        public string Name { get; }
-
         public Mesh[] LODMeshes { get; }
 
         public bool isGas {get { return true; } }
@@ -212,13 +284,10 @@ namespace GalaxyObject
         public GameObject Object
         {
             get { return this.star; }
+            set { this.star = value; }
         }
 
-        public Color GasColor
-        {
-            get { return this.initColor; }
-            set { this.initColor = value; }
-        }
+       
         public Transform Transform
         {
             get { return this.star.transform; }
@@ -234,17 +303,25 @@ namespace GalaxyObject
             get { return this.star.GetComponent<ParticleSystem>(); }
         }
 
-        public dynamic Parent
-        {
-            get { return this.parent; }
-            set { this.parent = value; }
-        }
+      
         public void CheckLOD() => Generator.CheckLOD(this);
-        
-        public void Instantiate (bool destroy, int index)
+
+
+        public GData ObjectData
         {
+            get { return this.data; }
+            set { this.data = value; }
+        }
+
+        public GData ParentData 
+        {
+            get { return this.parentData; }
+            set { this.parentData = value; }
 
         }
+
+        public GameObject Light { get; set; }
+     
     }
 
 
@@ -252,26 +329,26 @@ namespace GalaxyObject
     {
         GameObject planet;
         Moon[] moons;
-        Material material;
         float radius;
         float offset;
         SolarSystem parent;
         Mesh[] lodMeshes;
         Belt[] belt;
         bool gasObject;
-        Color initColor;
-        string name;
+        GameObject light;
+        GData data;
+        GData parentData;
+      
 
         public Planet(SolarSystem parent, Material material, float offset, float radius)
         {
-            this.name = "Planet" + GetHashCode();
-            this.planet = new GameObject(this.name);
-            this.material = material;
+            string name = parent.ObjectData.name + "_Planet" + GetHashCode();
+            this.planet = new GameObject(name);
             this.radius = radius;
             this.offset = offset;
             this.parent = parent;
             this.gasObject = false;
-
+            
             this.planet.AddComponent<MeshRenderer>().material = material;
             this.planet.AddComponent<MeshFilter>();
 
@@ -289,17 +366,28 @@ namespace GalaxyObject
             int numberOfMoons = radius > 1 ? (int)(Random.Range(5, 10)) : (int)(Random.Range(0, 5) * radius);
 
             this.moons = new Moon[numberOfMoons];
+
+            this.data = new GData
+            {
+                name = name,
+                position = this.planet.transform.position,
+                scale = this.planet.transform.lossyScale,
+                material = material
+            };
+
+            this.parentData = this.parent.ObjectData;
+            Generator.CreateLight(this);
             GenerateMoons();
+            GameObject.Destroy(this.planet);
             
         }
 
         public Planet(SolarSystem parent, GameObject gas, Material material, float offset, float radius)
         {
             this.parent = parent;
-            this.name = "GasPlanet" + GetHashCode();
+            string name = parent.ObjectData.name + "_GasPlanet" + GetHashCode();
             this.planet = GameObject.Instantiate(gas, this.parent.Transform);
-            this.planet.name = this.name;
-            this.material = material;
+            
 
             this.gasObject = true;
             this.planet.transform.localScale = Vector3.one * radius;
@@ -313,6 +401,13 @@ namespace GalaxyObject
             int numberOfMoons = (int)(Random.Range(5, 10));
 
             this.moons = new Moon[numberOfMoons];
+            this.data = new GData
+            {
+                name = name,
+                position = this.planet.transform.position,
+                scale = this.planet.transform.lossyScale,
+                material = material
+            };
 
             Generator.SetupGas(this);
 
@@ -320,15 +415,12 @@ namespace GalaxyObject
 
             GenerateBelt();
 
+            GameObject.Destroy(this.planet);
+
         }
 
 
-
-        public void Instantiate(bool destroy = false, int lodIndex = 0)
-        {
-            
-        }
-
+        
         public void CheckLOD()
         {
 
@@ -349,15 +441,12 @@ namespace GalaxyObject
 
         }
 
-        public Color GasColor
-        {
-            get { return this.initColor; }
-            set { this.initColor = value; }
-        }
+     
 
         public GameObject Object
         {
             get { return this.planet; }
+            set { this.planet = value; }
         }
 
         public Moon[] Moons
@@ -444,21 +533,31 @@ namespace GalaxyObject
             get { return this.lodMeshes; }
             set { this.lodMeshes = value; }
         }
-        public string Name
-        {
-            get { return this.planet.name; }
-        }
 
         public Belt[] Belt
         {
             get { return this.belt; }
         }
 
-        public dynamic Parent
+        public GameObject Light
         {
-            get { return this.parent; }
-            set { this.parent = value; }
+            get { return this.light; }
+            set { this.light = value; }
         }
+
+        public GData ObjectData
+        {
+            get { return this.data; }
+            set { this.data = value; }
+        }
+
+        public GData ParentData
+        {
+            get { return this.parentData; }
+            set { this.parentData = value; }
+
+        }
+
 
         private void GenerateMoons()
         {
@@ -467,7 +566,7 @@ namespace GalaxyObject
                 float mOffset = Random.Range(0.1f, 1f);
                 float mRadius = this.radius / Random.Range(50f, 100f);
                 
-                moons[i] = new Moon(this, this.material, mOffset, mRadius);
+                moons[i] = new Moon(this, this.data.material, mOffset, mRadius);
             }
             
 
@@ -542,56 +641,46 @@ namespace GalaxyObject
             
             for (int i = 0; i < results.Length; i++)
             {
-                belt[i] = new Belt(this, results[i], scaleResults[i], this.material);
-
-                
+                belt[i] = new Belt(this, results[i], scaleResults[i], this.data.material);
             }
-
 
             results.Dispose();
             scaleResults.Dispose();
-
         }
-
-
     }
 
     public class Belt : IGObject
     {
         GameObject beltObject;
         Mesh[] lodMeshes;
-        string name;
-        Material material;
         Planet parent;
+        GameObject light;
+        GData data;
+        GData parentData;
 
         public Belt(Planet parent, Vector3 position, float scale, Material material)
         {
             this.parent = parent;
-            this.name = this.parent.Name + "_BeltObj" + GetHashCode();
-            this.beltObject = new GameObject(this.name);
+            string  name = this.parent.ObjectData.name + "_BeltObj" + GetHashCode();
+            this.beltObject = new GameObject();
             this.beltObject.AddComponent<MeshRenderer>().material = material;
             this.beltObject.AddComponent<MeshFilter>();
-            this.material = material;
-            //this.entity = entityManager.Instantiate(entity);
-            //entityManager.AddComponentData(this.entity, new Translation
-            //{
-            //    Value = position
-            //});
-            //entityManager.AddComponentData(this.entity, new Scale
-            //{
-            //    Value = scale
-            //});
-
-            //this.entityManager = entityManager;
-            //Generator.GenerateMesh(position, ref lodMeshes, name);
-            //entityManager.AddSharedComponentData(this.entity, new RenderMesh { 
-            //    mesh = this.lodMeshes[0],
-            //    material = material});
+           
 
             this.beltObject.transform.position = position;
             this.beltObject.transform.SetParent(this.parent.Transform);
             this.beltObject.transform.localScale = Vector3.one * scale;
 
+            this.data = new GData
+            {
+                name = name,
+                position = this.beltObject.transform.position,
+                scale = this.beltObject.transform.lossyScale,
+                material = material
+            };
+            this.parentData = this.parent.ObjectData;
+
+            GameObject.Destroy(this.beltObject);
 
         }
 
@@ -611,6 +700,7 @@ namespace GalaxyObject
         public GameObject Object
         {
             get { return this.beltObject; }
+            set { this.beltObject = value; }
         }
 
         public bool isGas { get { return false; } }
@@ -630,33 +720,34 @@ namespace GalaxyObject
 
         public ParticleSystemRenderer ParticleRenderer { get; }
         public ParticleSystem Particle { get; }
-        public string Name
+    
+        public GData ObjectData
         {
-            get { return this.name; }
+            get { return this.data; }
+            set { this.data = value; }
         }
 
-        public Color GasColor { get; set; }
-
-        public dynamic Parent
+        public GData ParentData
         {
-            get { return this.parent; }
-            set { this.parent = value; }
+            get { return this.parentData; }
+            set { this.parentData = value; }
+
         }
 
         public float Offset { get; }
-
-
 
         public Mesh[] LODMeshes
         {
             get { return null; }
         }
+
+        public GameObject Light
+        {   get { return this.light; } 
+            set { this.light = value; }
+        }
+
         public void CheckLOD() => Generator.CheckLOD(this);
 
-        public void Instantiate (bool destroy, int index)
-        {
-
-        }
     }
 
 
@@ -667,13 +758,15 @@ namespace GalaxyObject
         Planet parent;
         Mesh[] lodMeshes;
         float offset;
-        string name;
-        
+        GameObject light;
+        GData data;
+        GData parentData;
+
         public Moon(Planet parent, Material material, float offset, float radius)
         {
             this.parent = parent;
-            this.name = this.parent.Name + "_Moon" + GetHashCode();
-            this.moon = new GameObject(this.name);
+            string name = this.parent.ObjectData.name + "_Moon" + GetHashCode();
+            this.moon = new GameObject();
             this.offset = offset;
 
             moon.AddComponent<MeshRenderer>().material = material;
@@ -692,11 +785,22 @@ namespace GalaxyObject
             this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.up, Random.Range(0f, 360f));
             this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.right, Random.Range(0f, 360f));
             this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.forward, Random.Range(0f, 360f));
+
+            this.data = new GData
+            {
+                name = name,
+                position = this.moon.transform.position,
+                scale = this.moon.transform.lossyScale,
+                material = material
+            };
+
+            GameObject.Destroy(this.moon);
         }
 
         public GameObject Object
         {
             get { return this.moon; }
+            set { this.moon = value; }
         }
         public ParticleSystem Particle { get; }
         public Transform Transform
@@ -712,18 +816,17 @@ namespace GalaxyObject
         public ParticleSystemRenderer ParticleRenderer { get; }
         public bool isGas { get { return false; } }
 
-        public string Name
+        public GData ObjectData
         {
-            get { return this.moon.name; }
+            get { return this.data; }
+            set { this.data = value; }
         }
 
-
-        public Color GasColor { get; set; }
-
-        public dynamic Parent
+        public GData ParentData
         {
-            get { return this.parent; }
-            set { this.parent = value; }
+            get { return this.parentData; }
+            set { this.parentData = value; }
+
         }
 
         public Vector3 Position
@@ -753,12 +856,15 @@ namespace GalaxyObject
         {
             get { return this.lodMeshes; }
         }
+
+        public GameObject Light
+        {
+            get { return this.light; }
+            set { this.light = value; }
+        }
+
         public void CheckLOD() => Generator.CheckLOD(this);
 
-        public void Instantiate(bool destroy, int index)
-        {
-
-        }
     }
 
 
@@ -766,9 +872,6 @@ namespace GalaxyObject
     public static class Generator
     {
         static MeshJobScheduleDelegate meshJob = MeshJob<CubeSphere, SingleStream>.ScheduleParallel;
-
-
-        
         public static void GenerateMesh(Vector3 position, ref Mesh[] lodMeshes, string name)
         {
             NoiseLayer[] noiseLayers = new NoiseLayer[4];
@@ -877,50 +980,55 @@ namespace GalaxyObject
 
         }
 
-        public static void GenerateLights(ref GameObject[] lights, SolarSystem ss, List<SolarSystem.Relations> relations)
+        public static void CreateLight<T>(T obj) where T : IGObject
         {
             float intensity;
             float range;
             float offset;
-
-            lights = new GameObject[relations.Count];
-            
-            for (int i = 0; i < relations.Count; i++)
+            if (obj.GetType() == typeof(Planet))
             {
-                var r = relations[i];
-
-                if (r.planet != null)
-                {
-                    offset = 0.996f;
-                    range = 0.008f;
-                    intensity = 10000f;
-                }
-                
-                else
-                {
-                    offset = 0.99f;
-                    range = 0.02f;
-                    intensity = 20000f;
-                }
-
-                lights[i] = new GameObject("LightTo_" + r.name);
-                Vector3 distance = r.position - ss.Star.Position;
-                lights[i].transform.SetParent(ss.Star.Transform);
-
-                lights[i].transform.position = distance * offset;
-                var l = lights[i].AddComponent<Light>();
-                l.type = LightType.Spot;
-                lights[i].transform.rotation = Quaternion.LookRotation(distance);
-                l.range = distance.magnitude * range;
-                l.intensity = intensity;
-                l.innerSpotAngle = (r.radius) * Mathf.Deg2Rad * 180f;
-
-                
-                   
+                offset = 0.996f;
+                range = 0.008f;
+                intensity = 10000f;
             }
+            else
+            {
+                offset = 0.99f;
+                range = 0.02f;
+                intensity = 20000f;
+            }
+
+            var g = new GameObject("LightTo_" + obj.ObjectData.name);
+
+            Vector3 distance = obj.ObjectData.position - obj.ParentData.position;
+
+            g.transform.SetParent(obj.Transform);
+
+
+            g.transform.position = distance * offset;
+            var l = g.AddComponent<Light>();
+            l.type = LightType.Spot;
+            g.transform.rotation = Quaternion.LookRotation(distance);
+            l.range = distance.magnitude * range;
+            l.intensity = intensity;
+            l.innerSpotAngle = (obj.Radius) * Mathf.Deg2Rad * 180f;
+
+            var d = obj.ObjectData;
+            d.light = new GLight
+            {
+                name = g.name,
+                postion = g.transform.position,
+                intensity = l.intensity,
+                range = l.range,
+                innerSpotAngle = l.innerSpotAngle,
+                outerSpotAngle = l.spotAngle
+            };
+
+            GameObject.Destroy(g);
+
+
         }
-        
-        
+
         public static void CheckLOD<T> (T obj) where T : IGObject
         {
             Vector3 camForward = Camera.main.transform.forward;
@@ -1052,37 +1160,16 @@ namespace GalaxyObject
                 colorMin = 0.95f;
                 colorMax = 1f;
             }
-            obj.GasColor = Color.HSVToRGB(Random.Range(colorMin, colorMax), Random.Range(0.5f, 1f), 1f);
-            main.startColor = obj.GasColor;
 
-            obj.Particle.GetComponent<ParticleSystemRenderer>().material.SetVector("_EmissionColor",
-                new Vector4(main.startColor.color.r, main.startColor.color.g, main.startColor.color.b,
-                4f));
+            var g = obj.ObjectData;
 
-            obj.Particle.GetComponent<ParticleSystemRenderer>().material.SetColor("_BaseColor", obj.GasColor);
+            g.particle = new GParticle
+            {
+                initColor = Color.HSVToRGB(Random.Range(colorMin, colorMax), Random.Range(0.5f, 1f), 1f),
 
-            //Gradient colorGrad = new Gradient();
-            //var colorOverL = particle.colorOverLifetime;
-            //Color color1 = Color.HSVToRGB(Random.Range(colorMin, colorMax), Random.Range(0.5f,1f), 1f);
-            //Color color2 = Color.HSVToRGB(Random.Range(colorMin, colorMax), Random.Range(0.5f, 1f), 1f);
+            };
 
-            //colorGrad.SetKeys(new GradientColorKey[] {
-            //new GradientColorKey(color1, 0.0f), new GradientColorKey(color2, 0.5f)},
-            //    new GradientAlphaKey[] {
-            //    new GradientAlphaKey(1f,0f), new GradientAlphaKey(Random.Range(0f, 0.2f),Random.Range(0.4f, 0.8f))});
-            //colorOverL.color = colorGrad;
-
-            ////var colorBySpeed = particle.colorBySpeed;
-
-            //color1 = Color.HSVToRGB(Random.Range(colorMin, colorMax), Random.Range(0.5f, 1f), 1f);
-            //color2 = Color.HSVToRGB(Random.Range(colorMin, colorMax), Random.Range(0.5f, 1f), 1f);
-
-            //colorGrad.SetKeys(new GradientColorKey[] {
-            //new GradientColorKey(color1, 0.0f), new GradientColorKey(color2, Random.Range(0.4f, 0.8f))},
-            //    new GradientAlphaKey[] {
-            //    new GradientAlphaKey(1f,0f), new GradientAlphaKey(Random.Range(0f, 0.2f),Random.Range(0.4f, 0.8f))});
-
-            //colorBySpeed.color = colorGrad;
+            obj.ObjectData = g;
         }
     }
 
