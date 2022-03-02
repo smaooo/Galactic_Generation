@@ -174,7 +174,7 @@ public class ProceduralMesh : MonoBehaviour
         };
 
         
-        jobs[(int)meshType](mesh, meshData, resolution, default, passer).Complete();
+        //jobs[(int)meshType](mesh, meshData, resolution, default, passer).Complete();
         
         Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
 

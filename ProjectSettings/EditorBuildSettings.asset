@@ -8,13 +8,13 @@ EditorBuildSettings:
   - enabled: 0
     path: 
     guid: 00000000000000000000000000000000
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Test.unity
     guid: 9c397e1e540ea0546badcb39d71649d2
   - enabled: 1
     path: Assets/Scenes/Galaxy.unity
     guid: e8db5300dc48b4e48b6d8b090ae3ec0e
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Loading.unity
     guid: b99b217aa332226498daef0344717354
   m_configObjects:

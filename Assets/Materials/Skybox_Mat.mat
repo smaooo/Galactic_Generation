@@ -4,8 +4,9 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_Name: Skybox_Mat
   m_Shader: {fileID: 106, guid: 0000000000000000f000000000000000, type: 0}
   m_ShaderKeywords: _METALLIC_SETUP _SUNDISK_HIGH_QUALITY
@@ -58,7 +59,23 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - unity_Lightmaps:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_LightmapsInd:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - unity_ShadowMasks:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Floats:
+    - Boolean_72bd8ad90c5d4230af3b39ae5d93a86a: 0
+    - Vector1_5b2b54696e054674a2c128405851b02a: 70
+    - Vector1_a4d1c15887e941dbb3ef0900be84b2ef: 3.24
+    - Vector1_dd91a08e9f6f4c81b9dbd643f3a87f57: 101.11
     - _AtmosphereThickness: 0.53
     - _BumpScale: 1
     - _Cutoff: 0.5
@@ -82,8 +99,14 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
+    - Color_0b7e568d05a3465aa19eab18b855dfed: {r: 0, g: 0, b: 0, a: 0}
+    - Color_5f6305d0b1b543098fa032c61790aa0d: {r: 1, g: 0.94602233, b: 0.22075465, a: 0}
+    - Vector2_70f475e770324175893e132f50d69910: {r: 1, g: 1, b: 0, a: 0}
+    - Vector2_8291c64153af4b18b8674d9d5b09aed8: {r: 21.5, g: 4, b: 0, a: 0}
+    - Vector2_d27d0179a6a44103beec5e7c9a6d2cb6: {r: 0, g: 0, b: 0, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _GroundColor: {r: 0.6392157, g: 0.6901961, b: 0.7411765, a: 1}
     - _SkyTint: {r: 1, g: 1, b: 1, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+  m_BuildTextureStacks: []

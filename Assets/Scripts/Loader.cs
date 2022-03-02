@@ -15,7 +15,7 @@ public class Loader : MonoBehaviour
     private IEnumerator Buffer(Text text)
     {
         yield return null;
-        var l = SceneManager.LoadSceneAsync("Test");
+        var l = SceneManager.LoadSceneAsync("Galaxy");
         l.allowSceneActivation = false;
         while (!l.isDone)
         {
