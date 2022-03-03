@@ -255,7 +255,7 @@ namespace GalaxyObject
         public Star(SolarSystem sParent, GameObject starPrefab)
         {
             this.parent = sParent;
-            this.star = new GameObject();
+            this.star = GameObject.Instantiate(starPrefab, this.parent.Transform);
             this.star.transform.SetParent(this.parent.Transform);
 
 
@@ -275,6 +275,8 @@ namespace GalaxyObject
 
             data.particle.prefab = starPrefab;
             GameObject.Destroy(this.star);
+
+            this.ObjectData.Instantiate(this);
         }
 
 
@@ -315,8 +317,9 @@ namespace GalaxyObject
             get { return this.star.GetComponent<ParticleSystem>(); }
         }
 
-      
-        public void CheckLOD() => Generator.CheckLOD(this);
+
+        //public void CheckLOD() => Generator.CheckLOD(this);
+        public void CheckLOD() { }
 
 
         public GData ObjectData
@@ -445,9 +448,25 @@ namespace GalaxyObject
             this.data.particle.prefab = gas;
             GenerateMoons();
 
-            if (Application.platform != RuntimePlatform.WebGLPlayer)
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+            {
                 if (Random.Range(0, 4) == 1)
+                {
+                    this.ObjectData.name += "WB";
                     GenerateBelt(); 
+
+                }
+
+            }
+            else
+            {
+                if (Random.Range(0, 4) != 1)
+                {
+                    this.ObjectData.name += "WB";
+                    GenerateBelt();
+
+                }
+            }
 
 
             //GameObject.Destroy(this.planet);
@@ -1155,14 +1174,14 @@ namespace GalaxyObject
             {
 
 
-                if (distance > 1000)
+                if (distance > 2000)
                 {
                     GameObject.Destroy(obj.Object);
                     GameObject.Destroy(obj.Light);
                     //if (obj.Object == null)
                     //    obj.ObjectData.Instantiate(obj);
                 }
-                else if (distance > 600f && distance <= 1000f)
+                else if (distance > 600f && distance <= 2000)
                 {
                     
                     if (!obj.isGas)

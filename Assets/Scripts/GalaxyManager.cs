@@ -170,14 +170,13 @@ public class GalaxyManager : MonoBehaviour
 
     public void GoToStar()
     {
-        StartCoroutine(MoveCamera(ss.Star.ObjectData.position));
+        StartCoroutine(MoveCamera(ss.Star.ObjectData.position, "STAR"));
     }
     public void GoToPlanet()
     {
         FillMoonList();
-        if (planetDropDown.options[0].text == "Select a Planet!")
-            planetDropDown.options.RemoveAt(0);
-        StartCoroutine(MoveCamera(ss.Planets[planetDropDown.value].ObjectData.position));
+        StartCoroutine(MoveCamera(ss.Planets[planetDropDown.value].ObjectData.position, ""));
+     
     }
 
     private void FillMoonList()
@@ -186,7 +185,6 @@ public class GalaxyManager : MonoBehaviour
         {
             moonDropDown.gameObject.SetActive(true);
             List<TMP_Dropdown.OptionData> moonOptions = new List<TMP_Dropdown.OptionData>();
-            moonOptions.Add(new TMP_Dropdown.OptionData { text = "Select a Moon!" });
 
             foreach (var m in ss.Planets[planetDropDown.value].Moons)
             {
@@ -201,17 +199,15 @@ public class GalaxyManager : MonoBehaviour
     }
     public void GoToMoon()
     {
-        
-        if (moonDropDown.options[0].text == "Select a Moon!")
-            moonDropDown.options.RemoveAt(0);
-        StartCoroutine(MoveCamera(ss.Planets[planetDropDown.value].Moons[moonDropDown.value].ObjectData.position));
+        StartCoroutine(MoveCamera(ss.Planets[planetDropDown.value].Moons[moonDropDown.value].ObjectData.position, ""));
+     
 
     }
 
-    private IEnumerator MoveCamera(Vector3 target)
+    private IEnumerator MoveCamera(Vector3 target, string obj)
     {
         print("Cal");
-        Vector3 pos = new Vector3(target.x + 150, target.y, target.z + 150);
+        Vector3 pos = new Vector3(target.x + (obj == "STAR" ? 1000 : 150), target.y, target.z + (obj == "STAR" ? 1000 : 150));
         
 
         while (Vector3.Distance(Camera.main.transform.position, pos) > 10)
@@ -234,7 +230,6 @@ public class GalaxyManager : MonoBehaviour
             position = ss.Star.ObjectData.position
         });
         List<TMP_Dropdown.OptionData> planetOptions = new List<TMP_Dropdown.OptionData>();
-        planetOptions.Add(new TMP_Dropdown.OptionData { text = "Select a Planet!" });
         foreach (var p in ss.Planets)
         {
             planetOptions.Add(new TMP_Dropdown.OptionData { text = p.ObjectData.name });
