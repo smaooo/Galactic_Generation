@@ -10403,6 +10403,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   planetMaterial: {fileID: 2100000, guid: 161eb56f0a047d74f819f0412079fc7d, type: 2}
   starPrefab: {fileID: 1533875261873547426, guid: f8874f5e7c081bc4eb6d484995a98e4a, type: 3}
+  systemLoaded: 0
+  locs: []
   text: {fileID: 0}
 --- !u!4 &1470592935
 Transform:
@@ -10436,7 +10438,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1564177255
 Transform:
   m_ObjectHideFlags: 0
@@ -10463,7 +10465,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a63e624c9b4a8964686d3f7ea4ab16a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  meshType: 6
+  meshType: 0
   resolution: 50
   slider: {fileID: 0}
   dropDown: {fileID: 0}

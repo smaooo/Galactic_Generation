@@ -21,19 +21,13 @@ public class ProceduralMesh : MonoBehaviour
 
     static MeshJobScheduleDelegate[] jobs =
     {
-        MeshJob<SquareGrid, SingleStream>.ScheduleParallel,
-        MeshJob<SharedSquareGrid, SingleStream>.ScheduleParallel,
-        MeshJob<SharedTriangleGrid, SingleStream>.ScheduleParallel,
-        MeshJob<PointyHexagonGrid, SingleStream>.ScheduleParallel,
-        MeshJob<FlatHexagonGrid, SingleStream>.ScheduleParallel,
-        MeshJob<UVSphere, SingleStream>.ScheduleParallel,
+      
         MeshJob<CubeSphere, SingleStream>.ScheduleParallel
     };
 
     public enum MeshType
     {
-        SquareGrid, SharedSquareGrid, SharedTriangleGrid, PointyHexagonGrid, FlatHexagonGrid,
-        UVSphere, CubeSphere
+       CubeSphere
     }
 
     [SerializeField]
@@ -173,9 +167,9 @@ public class ProceduralMesh : MonoBehaviour
             nl4 = noiseLayers[3].active ? noiseLayers[3] : new NoiseLayer()
         };
 
-        
-        //jobs[(int)meshType](mesh, meshData, resolution, default, passer).Complete();
-        
+
+        jobs[(int)meshType](mesh, meshData, resolution, default, passer).Complete();
+
         Mesh.ApplyAndDisposeWritableMeshData(meshDataArray, mesh);
 
 

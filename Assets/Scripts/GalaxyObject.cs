@@ -96,9 +96,11 @@ namespace GalaxyObject
             var main = obj.GetComponent<ParticleSystem>().main;
             main.startColor = this.initColor;
 
-            obj.GetComponent<ParticleSystemRenderer>().material.SetVector("_EmissionColor", new Vector4(
+            obj.GetComponent<ParticleSystemRenderer>().material
+                .SetVector("_EmissionColor", new Vector4(
                 this.initColor.r, this.initColor.g, this.initColor.b, 4f));
-            obj.GetComponent<ParticleSystemRenderer>().material.SetColor("_BaseColor", this.initColor);
+            obj.GetComponent<ParticleSystemRenderer>().material.
+                SetColor("_BaseColor", this.initColor);
 
             return obj;
         }
@@ -146,21 +148,9 @@ namespace GalaxyObject
     {
         Planet[] planets;
         Star star;
-        GameObject[] lights;
         Transform transform;
         GData data;
-        GData parentData;
         bool destroyed;
-
-        public struct Relations
-        {
-            public int id;
-            public string type;
-            public string name;
-            public float radius;
-            public Vector3 position;
-            public Planet planet;
-        }
 
         public SolarSystem(Transform parent, Material planetMaterial, GameObject gas)
         {
@@ -182,11 +172,10 @@ namespace GalaxyObject
             {
                 distance += Random.Range(100, 1000f);
 
-                this.planets[i] = Random.Range(0f, 1f) <= 0.3f && i > 2 ? new Planet(this, gas, planetMaterial, distance, Random.Range(0.5f, 5f))
+                this.planets[i] = Random.Range(0f, 1f) <= 0.3f && i > 2
+                    ? new Planet(this, gas, planetMaterial, distance, Random.Range(0.5f, 5f))
                     : new Planet(this, planetMaterial, distance, Random.Range(5f, 40f));
-
             }
-            
         }
 
         public void CheckLOD()
@@ -247,13 +236,10 @@ namespace GalaxyObject
 
         public void Destroy()
         {
-            if (this.Object != null)
+            this.Star.Destroy();
+            foreach(var p in this.Planets)
             {
-                GameObject.Destroy(this.Object);
-            }
-            else
-            {
-                this.destroyed = true;
+                p.Destroy();
             }
         }
     }
@@ -394,11 +380,16 @@ namespace GalaxyObject
             this.planet.transform.position = new Vector3(offset, 0f, offset);
             Generator.GenerateMesh(this.planet.transform.position, ref lodMeshes, this.planet.name);
             this.mesh = lodMeshes[0];
-            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.up, Random.Range(0f,360f));
-            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.right, Random.Range(0f,360f));
-            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.forward, Random.Range(0f,360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position,
+                this.parent.Star.Transform.up, Random.Range(0f,360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position,
+                this.parent.Star.Transform.right, Random.Range(0f,360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position,
+                this.parent.Star.Transform.forward, Random.Range(0f,360f));
 
-            int numberOfMoons = radius > 1 ? (int)(Random.Range(5, 10)) : (int)(Random.Range(0, 5) * radius);
+            int numberOfMoons = radius > 1 
+                ? (int)(Random.Range(5, 10)) 
+                : (int)(Random.Range(0, 5) * radius);
 
             this.moons = new Moon[numberOfMoons];
             this.parentData = this.parent.ObjectData;
@@ -430,9 +421,12 @@ namespace GalaxyObject
 
             this.planet.transform.position = new Vector3(offset, 0f, offset);
 
-            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.up, Random.Range(0f, 360f));
-            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.right, Random.Range(0f, 360f));
-            this.planet.transform.RotateAround(this.parent.Star.Position, this.parent.Star.Transform.forward, Random.Range(0f, 360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position,
+                this.parent.Star.Transform.up, Random.Range(0f, 360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position,
+                this.parent.Star.Transform.right, Random.Range(0f, 360f));
+            this.planet.transform.RotateAround(this.parent.Star.Position,
+                this.parent.Star.Transform.forward, Random.Range(0f, 360f));
             this.radius = this.planet.GetComponent<ParticleSystemRenderer>().bounds.size.x / 2;
             int numberOfMoons = (int)(Random.Range(5, 10));
             this.parentData = parent.ObjectData;
@@ -451,9 +445,12 @@ namespace GalaxyObject
             this.data.particle.prefab = gas;
             GenerateMoons();
 
-            GenerateBelt();
+            if (Application.platform != RuntimePlatform.WebGLPlayer)
+                if (Random.Range(0, 4) == 1)
+                    GenerateBelt(); 
 
-            GameObject.Destroy(this.planet);
+
+            //GameObject.Destroy(this.planet);
 
         }
 
@@ -463,7 +460,7 @@ namespace GalaxyObject
         {
 
             Generator.CheckLOD(this);
-            if (this.gasObject)
+            if (this.gasObject && this.belt != null)
             {
                 foreach (var b in this.belt)
                 {
@@ -624,7 +621,6 @@ namespace GalaxyObject
                 
                 moons[i] = new Moon(this, this.data.material, mOffset, mRadius);
             }
-            
 
         }
 
@@ -660,10 +656,7 @@ namespace GalaxyObject
                     z = rand.NextFloat(-outerRadius, outerRadius);
 
                     pos = matrix.MultiplyPoint3x4(float3(x, y, z));
-
                     tmp = matrix.MultiplyPoint3x4(float3(x, 0f, z));
-
-
                 }
                 while (distance(position, tmp) < innerRadius
                     || distance(position, tmp) > outerRadius
@@ -671,14 +664,14 @@ namespace GalaxyObject
 
                 scales[i] = rand.NextFloat(0.1f, 0.3f);
                 pos = (pos - position) * remap(0f, 1f, 0.8f, 1.2f, snoise(pos));
-                positions[i] = pos;
+                positions[i] = matrix.MultiplyPoint3x4(pos);
             }
         }
 
         private void GenerateBelt()
         {
-            
-            int count = Application.platform == RuntimePlatform.WebGLPlayer ? Random.Range(100,200) : Random.Range(1000, 2000);
+
+            int count = Random.Range(100, 200);
             float innerRingRadius = this.radius * Mathf.Log10(count) / Random.Range(2f, 2.5f);
             float outerRingRadius = this.radius * Mathf.Log10(count) / Random.Range(1f, 2f);
 
@@ -728,15 +721,15 @@ namespace GalaxyObject
             this.beltObject.AddComponent<MeshFilter>();
            
 
-            this.beltObject.transform.position = position;
             this.beltObject.transform.SetParent(this.parent.Transform);
+            this.beltObject.transform.position = position;
             this.beltObject.transform.localScale = Vector3.one * scale;
 
             this.parentData = this.parent.ObjectData;
             this.data = new GData
             {
                 name = name,
-                position = position,
+                position = this.beltObject.transform.position,
                 scale = this.beltObject.transform.lossyScale,
                 material = material,
                 parent = this.parentData
@@ -847,7 +840,7 @@ namespace GalaxyObject
         public Moon(Planet parent, Material material, float offset, float radius)
         {
             this.parent = parent;
-            string name = this.parent.ObjectData.name + "_Moon" + GetHashCode();
+            string name = "Moon" + GetHashCode();
             this.moon = new GameObject();
             this.offset = offset;
 
@@ -864,9 +857,12 @@ namespace GalaxyObject
 
             
 
-            this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.up, Random.Range(0f, 360f));
-            this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.right, Random.Range(0f, 360f));
-            this.moon.transform.RotateAround(this.parent.Position, this.parent.Transform.forward, Random.Range(0f, 360f));
+            this.moon.transform.RotateAround(this.parent.Position,
+                this.parent.Transform.up, Random.Range(0f, 360f));
+            this.moon.transform.RotateAround(this.parent.Position,
+                this.parent.Transform.right, Random.Range(0f, 360f));
+            this.moon.transform.RotateAround(this.parent.Position,
+                this.parent.Transform.forward, Random.Range(0f, 360f));
             this.parentData = this.parent.ObjectData;
             this.data = new GData
             {
@@ -972,7 +968,7 @@ namespace GalaxyObject
 
     public static class Generator
     {
-        static MeshJobScheduleDelegate meshJob = MeshJob<CubeSphere, SingleStream>.ScheduleParallel;
+        static MeshJobScheduleDelegate meshJob = MeshJob<CubeSphere, MultiStream>.ScheduleParallel;
 
         
         public static void GenerateMesh(Vector3 position, ref Mesh[] lodMeshes, string name)
@@ -1105,7 +1101,7 @@ namespace GalaxyObject
             }
             else
             {
-                offset = 0.99f;
+                offset = 0.9f;
                 range = 0.02f;
                 intensity = 20000f;
                 pos = obj.ParentData.position;
@@ -1159,7 +1155,7 @@ namespace GalaxyObject
             {
 
 
-                if (distance > 2000f)
+                if (distance > 1000)
                 {
                     GameObject.Destroy(obj.Object);
                     GameObject.Destroy(obj.Light);

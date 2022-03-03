@@ -76,12 +76,12 @@ Material:
     - Vector1_5b2b54696e054674a2c128405851b02a: 70
     - Vector1_a4d1c15887e941dbb3ef0900be84b2ef: 3.24
     - Vector1_dd91a08e9f6f4c81b9dbd643f3a87f57: 101.11
-    - _AtmosphereThickness: 0.53
+    - _AtmosphereThickness: 0
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Exposure: 1.25
+    - _Exposure: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1

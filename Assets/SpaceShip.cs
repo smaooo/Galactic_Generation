@@ -28,16 +28,17 @@ public class SpaceShip : MonoBehaviour
 
     private void Update()
     {
-        if (!assigned && FindObjectOfType<GalaxyManager>().systemLoaded)
-        {
-            var planets = new List<Planet>(FindObjectOfType<GalaxyManager>().ss.Planets);
-            planets.OrderByDescending(p => Vector3.Distance(p.ObjectData.position, Vector3.zero));
-            this.transform.position = planets[0].ObjectData.position + new Vector3(100, 100, 100);
-            this.transform.rotation = Quaternion.LookRotation(planets[0].ObjectData.position - this.transform.position);
-            assigned = true;
-        }
+        //if (!assigned && FindObjectOfType<GalaxyManager>().systemLoaded)
+        //{
+        //    var planets = new List<Planet>(FindObjectOfType<GalaxyManager>().ss.Planets);
+        //    planets.OrderByDescending(p => Vector3.Distance(p.ObjectData.position, Vector3.zero));
+        //    print(planets[0].ObjectData.name);
+        //    this.transform.position = planets[0].ObjectData.position + new Vector3(100, 0, 100);
+        //    this.transform.rotation = Quaternion.LookRotation(FindObjectOfType<GalaxyManager>().ss.Star.ObjectData.position - this.transform.position);
+        //    assigned = true;
+        //}
 
-        seconCam.transform.position = new Vector3(this.transform.position.x + 0.42f, this.transform.position.y, this.transform.position.z + 0.268f);
+        //seconCam.transform.position = new Vector3(this.transform.position.x + 0.42f, this.transform.position.y, this.transform.position.z + 0.268f);
         //seconCam.transform.rotation = Quaternion.LookRotation(-this.transform.right, this.transform.up);
     }
 
@@ -45,8 +46,8 @@ public class SpaceShip : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (assigned)
             Move();
+        //if (assigned)
     }
 
     private void Move()
